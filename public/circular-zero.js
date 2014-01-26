@@ -58,12 +58,14 @@ function init()
         messageBox.html("WebGL up and running!");
     }
 
-    gl.clearColor(0, 0, 0, 1);
+    gl.clearColor(1, 1, 1, 1);
 
     // Load shaders and get uniform locations
     defaultProgram.program = InitShaders(gl, "default-vertex-shader", "default-fragment-shader");
     // add uniform locations
-    // defaultProgram.uBCTexture = gl.getUniformLocation(defaultProgram.program, "uBCTexture");
+    defaultProgram.uCenter = gl.getUniformLocation(defaultProgram.program, "uCenter");
+    defaultProgram.uR = gl.getUniformLocation(defaultProgram.program, "uR");
+    // add attribute locations
     defaultProgram.aPos = gl.getAttribLocation(defaultProgram.program, "aPos");
     defaultProgram.aColor = gl.getAttribLocation(defaultProgram.program, "aColor");
 
@@ -73,8 +75,8 @@ function init()
 
     gl.useProgram(null);
 
-    circles.push(new Circle(0, 0, 0.5));
-    circles.push(new Circle(0, 0, 0.75, true));
+    circles.push(new Circle(0, 0, 1, true));
+    circles.push(new Circle(0, 0, 0.9));
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -159,7 +161,6 @@ function render()
 function drawScreen()
 {
     gl.enable(gl.BLEND);
-    gl.useProgram(defaultProgram.program);
 
     gl.viewport(0, 0, viewPort.width, viewPort.height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);

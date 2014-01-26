@@ -17,6 +17,9 @@
     <![endif]-->
 
     <script id="default-vertex-shader" type="x-shader/x-vertex">
+        uniform vec2 uCenter;
+        uniform float uR;
+
         attribute vec4 aPos;
         attribute vec4 aColor;
 
@@ -25,7 +28,9 @@
         void main()
         {
             vColor = aColor;
-            gl_Position = aPos;
+            // The factor of 0.9 is so that our viewport sees slightly more than
+            // the [-1, 1] region.
+            gl_Position = vec4(aPos.xyz * uR * 0.9, aPos.w) + vec4(uCenter, 0, 0);
         }
     </script>
 

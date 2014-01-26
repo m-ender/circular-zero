@@ -8,7 +8,39 @@ var pi = Math.PI;
 
 // Should return a number between 0 and 1 and is currently used for
 // the R, G and B channels. Use Math.random for acid mode!
-var colorFunction = function () { return 1; };
+var colorFunction = function () { return 0; };
+
+// Coordinates for the inside of a unit circle
+var insideCoords =
+    [0, 0,  // center vertex
+     1, 0]; // radial vertex right of the center
+
+for (i = 1; i <= segments; ++i)
+{
+    angle = i * 2*pi / segments;
+
+    insideCoords.push(cos(angle));
+    insideCoords.push(sin(angle));
+}
+
+// Coordinates for the outside of a unit circle
+// We actually render a ring, with the outer radius sufficiently large
+// to lie outside the viewport.
+var outsideCoords =
+    [1, 0,    // radial vertex right of center
+     1e5, 0]; // faraway vertex right of center; make sure not to use
+              // radii below 1e-4... otherwise the outer radius will
+              // be visible inside the viewport
+
+for (i = 1; i <= segments; ++i)
+{
+    angle = i * 2*pi / segments;
+
+    outsideCoords.push(cos(angle));
+    outsideCoords.push(sin(angle));
+    outsideCoords.push(1e5*cos(angle));
+    outsideCoords.push(1e5*sin(angle));
+}
 
 // x and y are the coordinates of the circle's center, r is the radius.
 // if the fourth parameter is true, the outside will be rendered instead
@@ -27,38 +59,9 @@ function Circle(x, y, r, outside)
     var angle;
 
     if (!outside)
-    {
-        coords =
-            [x,   y,  // center vertex
-             x+r, y]; // radial vertex right of the center
-
-        for (i = 1; i <= segments; ++i)
-        {
-            angle = i * 2*pi / segments;
-
-            coords.push(x + r*cos(angle));
-            coords.push(y + r*sin(angle));
-        }
-    }
+        coords = insideCoords;
     else
-    {
-        // We actually render a ring, with the outer radius sufficiently large
-        // to lie outside the viewport.
-        r2 = 10;
-        coords =
-            [x+r,  y,  // radial vertex right of center
-             x+r2, y]; // faraway vertex right of center
-
-        for (i = 1; i <= segments; ++i)
-        {
-            angle = i * 2*pi / segments;
-
-            coords.push(x + r*cos(angle));
-            coords.push(y + r*sin(angle));
-            coords.push(x + r2*cos(angle));
-            coords.push(y + r2*sin(angle));
-        }
-    }
+        coords = outsideCoords;
 
     this.vertices = {};
     this.vertices.data = new Float32Array(coords);
@@ -86,6 +89,11 @@ function Circle(x, y, r, outside)
 
 Circle.prototype.render = function()
 {
+    gl.useProgram(defaultProgram.program);
+
+    gl.uniform2f(defaultProgram.uCenter, this.x, this.y);
+    gl.uniform1f(defaultProgram.uR, this.r);
+
     gl.enableVertexAttribArray(defaultProgram.aPos);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertices.bufferId);
     gl.vertexAttribPointer(defaultProgram.aPos, 2, gl.FLOAT, false, 0, 0);
@@ -97,7 +105,7 @@ Circle.prototype.render = function()
     if (!this.outside)
         gl.drawArrays(gl.TRIANGLE_FAN, 0, 2 + segments);
     else
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 2+ 2*segments);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 2 + 2*segments);
 
     gl.disableVertexAttribArray(defaultProgram.aPos);
     gl.disableVertexAttribArray(defaultProgram.aColor);
