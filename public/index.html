@@ -4,11 +4,60 @@
     <meta charset=utf-8 />
     <title>Circular[0] - prototype</title>
 
+    <link rel="stylesheet" type="text/css" href="main.css" />
+
+    <script type="text/javascript" src="jquery-2.1.0.js"></script>
+
+    <script type="text/javascript" src="webgl-utils.js"></script>
+    <script type="text/javascript" src="circular-zero.js"></script>
+
     <!--[if IE]>
         <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
+
+    <script id="default-vertex-shader" type="x-shader/x-vertex">
+        attribute vec4 aPos;
+        attribute vec4 aColor;
+
+        varying vec4 vColor;
+
+        void main()
+        {
+            vColor = aColor;
+            gl_Position = aPos;
+        }
+    </script>
+
+    <script id="default-fragment-shader" type="x-shader/x-fragment">
+        #ifdef GL_ES
+        precision mediump float;
+        #endif
+
+        varying vec4 vColor;
+
+        void main() {
+            gl_FragColor = vColor;
+        }
+    </script>
+
 </head>
 <body>
-    Wat?
+    <canvas id="gl-canvas">
+        Oops ... your browser doesn't support HTML5's Canvas elements!
+    </canvas>
+    <div id="message"></div>
+    <div id="debug">
+        Normalised cursor coordinates:<br>
+        x = <span id="xcoord"></span><br>
+        y = <span id="ycoord"></span><br>
+        <br>
+        Last mouse down:<br>
+        x = <span id="xdown"></span><br>
+        y = <span id="ydown"></span><br>
+        <br>
+        Last mouse up:<br>
+        x = <span id="xup"></span><br>
+        y = <span id="yup"></span>
+    </div>
 </body>
 </html>
