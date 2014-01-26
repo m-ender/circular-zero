@@ -63,8 +63,11 @@ var CircleType = {
 // x and y are the coordinates of the circle's center, r is the radius.
 // The fourth parameter should be a member of CircleType (see above).
 // The default type is CircleType.Circumference.
-function Circle(x, y, r, type)
+// The color is optional and can be used to overwrite the global colorFunction.
+function Circle(x, y, r, type, color)
 {
+    this.hidden = false;
+
     this.x = x;
     this.y = y;
     this.r = r;
@@ -99,9 +102,9 @@ function Circle(x, y, r, type)
     var components = [];
     for (i = 0; i < coords.length / 2; ++i)
     {
-        components.push(colorFunction());
-        components.push(colorFunction());
-        components.push(colorFunction());
+        components.push(color ? color : colorFunction());
+        components.push(color ? color : colorFunction());
+        components.push(color ? color : colorFunction());
         components.push(1.0);
     }
 
@@ -113,8 +116,13 @@ function Circle(x, y, r, type)
     gl.bufferData(gl.ARRAY_BUFFER, this.colors.data, gl.STATIC_DRAW);
 }
 
+Circle.prototype.hide = function() { this.hidden = true; };
+Circle.prototype.show = function() { this.hidden = false; };
+
 Circle.prototype.render = function()
 {
+    if (this.hidden) return;
+
     gl.useProgram(circleProgram.program);
 
     gl.uniform2f(circleProgram.uCenter, this.x, this.y);

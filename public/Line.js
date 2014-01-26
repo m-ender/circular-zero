@@ -27,12 +27,15 @@ var LineType = {
 // The default type is LineType.Line.
 function Line(angle, type)
 {
+    this.hidden = false;
+
+    this.angle = angle;
+
     this.type = type || LineType.Line;
 
     // Initialize attribute buffers
     var coords;
     var i;
-    this.angle = angle;
 
     switch(this.type)
     {
@@ -71,8 +74,13 @@ function Line(angle, type)
     gl.bufferData(gl.ARRAY_BUFFER, this.colors.data, gl.STATIC_DRAW);
 }
 
+Line.prototype.hide = function() { this.hidden = true; };
+Line.prototype.show = function() { this.hidden = false; };
+
 Line.prototype.render = function()
 {
+    if (this.hidden) return;
+
     gl.useProgram(lineProgram.program);
 
     gl.uniform1f(circleProgram.uAngle, this.angle);
