@@ -18,6 +18,9 @@ var rttFramebuffers = []; // Render to texture memory (this will store 3 framebu
 var resolution = 512; // We're assuming a square aspect ratio
 var viewPort = {};
 
+var renderScale = 0.9; // means that the coordinate range [-1, 1] will fill 90% of the viewport
+                       // the scaling is done in the shaders, but is has to be respected in obtaining coordinates from the mouse position
+
 var previousTexture; // Points to the texture from two frames ago, so that we only ever need to add to this value (makes module maths simpler)
 
 // Timing
@@ -27,6 +30,8 @@ var interval = 1000/fps;
 var lastTime;
 
 var circles = [];
+
+var mouseDown = null;
 
 window.onload = init;
 
@@ -75,8 +80,9 @@ function init()
 
     gl.useProgram(null);
 
+    circles.push(new Circle(2, 2, 0.01));
     circles.push(new Circle(0, 0, 1, CircleType.Outside));
-    circles.push(new Circle(1, -1, 1, CircleType.Circumference));
+    circles.push(new Circle(1, -1, 1));
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -176,6 +182,17 @@ function handleMouseMove(event) {
 
     debugBox.find('#xcoord').html(coords.x);
     debugBox.find('#ycoord').html(coords.y);
+
+    circles[0].x = coords.x;
+    circles[0].y = coords.y;
+
+    if (mouseDown)
+    {
+        var dx = coords.x - mouseDown.x;
+        var dy = coords.y - mouseDown.y;
+
+        circles[0].r = Math.sqrt(dx*dx + dy*dy);
+    }
 }
 
 function handleMouseDown(event) {
@@ -184,6 +201,8 @@ function handleMouseDown(event) {
 
     debugBox.find('#xdown').html(coords.x);
     debugBox.find('#ydown').html(coords.y);
+
+    mouseDown = coords;
 }
 
 function handleMouseUp(event) {
@@ -192,6 +211,8 @@ function handleMouseUp(event) {
 
     debugBox.find('#xup').html(coords.x);
     debugBox.find('#yup').html(coords.y);
+
+    mouseDown = null;
 }
 
 // Takes the mouse event and the rectangle to normalise for
@@ -200,8 +221,8 @@ function handleMouseUp(event) {
 function normaliseCursorCoordinates(event, rect)
 {
     return {
-        x: 2*(event.clientX - rect.left) / resolution - 1,
-        y: 1 - 2*(event.clientY - rect.top) / resolution, // invert, to make positive y point upwards
+        x: (2*(event.clientX - rect.left) / resolution - 1) / renderScale,
+        y: (1 - 2*(event.clientY - rect.top) / resolution) / renderScale, // invert, to make positive y point upwards
     };
 }
 
