@@ -26,6 +26,8 @@ var fps = 60;
 var interval = 1000/fps;
 var lastTime;
 
+var circles = [];
+
 window.onload = init;
 
 function init()
@@ -71,34 +73,8 @@ function init()
 
     gl.useProgram(null);
 
-    // Initialize attribute buffers
-    var vertices = {};
-    vertices.data = new Float32Array(
-        [
-            -0.9, -0.9,
-             0.9, -0.9,
-             0.9,  0.9
-        ]);
-
-    vertices.bufferId = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertices.bufferId);
-    gl.bufferData(gl.ARRAY_BUFFER, vertices.data, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(defaultProgram.aPos, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(defaultProgram.aPos);
-
-    var colors = {};
-    colors.data = new Float32Array(
-        [
-            1.0, 0.0, 0.0, 1.0,
-            0.0, 1.0, 0.0, 1.0,
-            0.0, 0.0, 1.0, 1.0
-        ]);
-
-    colors.bufferId = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, colors.bufferId);
-    gl.bufferData(gl.ARRAY_BUFFER, colors.data, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(defaultProgram.aColor, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(defaultProgram.aColor);
+    circles.push(new Circle(0, 0, 0.5));
+    circles.push(new Circle(0, 0, 0.75, true));
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -163,6 +139,7 @@ function InitShaders(gl, vertexShaderId, fragmentShaderId)
     return program;
 }
 
+// This is a fixed-framerate rendering loop.
 function render()
 {
     window.requestAnimFrame(render, canvas);
@@ -186,7 +163,9 @@ function drawScreen()
 
     gl.viewport(0, 0, viewPort.width, viewPort.height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.drawArrays(gl.TRIANGLE_FAN, 0, 3);
+
+    circles.forEach(function(c) { c.render(); });
+
     gl.disable(gl.BLEND);
 }
 
