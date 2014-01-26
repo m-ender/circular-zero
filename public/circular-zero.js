@@ -1,3 +1,5 @@
+var atan2 = Math.atan2;
+
 var canvas;
 var messageBox;
 var debugBox;
@@ -6,6 +8,7 @@ var gl;
 
 // Objects holding data for individual shader programs
 var circleProgram = {};
+var lineProgram = {};
 
 // Textures
 // We will use three textures, whose roles will be shifted circularly every frame
@@ -30,6 +33,7 @@ var interval = 1000/fps;
 var lastTime;
 
 var circles = [];
+var lines = [];
 
 var mouseDown = null;
 
@@ -78,11 +82,20 @@ function init()
     // gl.useProgram(circleProgram.program);
     // gl.uniform1i(circleProgram.uBCTexture, 0);
 
+
+    lineProgram.program = InitShaders(gl, "line-vertex-shader", "line-fragment-shader");
+    // add uniform locations
+    circleProgram.uAngle = gl.getUniformLocation(lineProgram.program, "uAngle");
+    // add attribute locations
+    lineProgram.aPos = gl.getAttribLocation(lineProgram.program, "aPos");
+    lineProgram.aColor = gl.getAttribLocation(lineProgram.program, "aColor");
+
     gl.useProgram(null);
 
-    circles.push(new Circle(2, 2, 0.01));
     circles.push(new Circle(0, 0, 1, CircleType.Outside));
-    circles.push(new Circle(1, -1, 1));
+    circles.push(new Circle(-1, 1, 1));
+
+    lines.push(new Line(atan2(1, 2), LineType.Right));
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -172,6 +185,7 @@ function drawScreen()
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     circles.forEach(function(c) { c.render(); });
+    lines.forEach(function(l) { l.render(); });
 
     gl.disable(gl.BLEND);
 }
@@ -183,15 +197,12 @@ function handleMouseMove(event) {
     debugBox.find('#xcoord').html(coords.x);
     debugBox.find('#ycoord').html(coords.y);
 
-    circles[0].x = coords.x;
-    circles[0].y = coords.y;
+    lines[0].angle = atan2(coords.y, coords.x);
 
-    if (mouseDown)
+    if (false) //mouseDown
     {
-        var dx = coords.x - mouseDown.x;
-        var dy = coords.y - mouseDown.y;
-
-        circles[0].r = Math.sqrt(dx*dx + dy*dy);
+        // handle mouse dragging
+        // mouseDown is an object with the coordinates of where you clicked
     }
 }
 

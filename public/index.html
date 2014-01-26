@@ -10,7 +10,7 @@
 
     <script type="text/javascript" src="webgl-utils.js"></script>
     <script type="text/javascript" src="Circle.js"></script>
-    <!--<script type="text/javascript" src="Line.js"></script>-->
+    <script type="text/javascript" src="Line.js"></script>
     <script type="text/javascript" src="circular-zero.js"></script>
 
     <!--[if IE]>
@@ -36,6 +36,37 @@
     </script>
 
     <script id="circle-fragment-shader" type="x-shader/x-fragment">
+        #ifdef GL_ES
+        precision mediump float;
+        #endif
+
+        varying vec4 vColor;
+
+        void main() {
+            gl_FragColor = vColor;
+        }
+    </script>
+
+    <script id="line-vertex-shader" type="x-shader/x-vertex">
+        uniform float uAngle;
+
+        attribute vec4 aPos;
+        attribute vec4 aColor;
+
+        varying vec4 vColor;
+
+        void main()
+        {
+            vColor = aColor;
+            // No need for scaling, because all lines go through the center
+            gl_Position = vec4( cos(uAngle)*aPos.x - sin(uAngle)*aPos.y,
+                                sin(uAngle)*aPos.x + cos(uAngle)*aPos.y,
+                                0.0,
+                                1.0) ;
+        }
+    </script>
+
+    <script id="line-fragment-shader" type="x-shader/x-fragment">
         #ifdef GL_ES
         precision mediump float;
         #endif
