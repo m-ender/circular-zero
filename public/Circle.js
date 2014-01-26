@@ -10,6 +10,17 @@ var pi = Math.PI;
 // the R, G and B channels. Use Math.random for acid mode!
 var colorFunction = function () { return 0; };
 
+// Coordinates for a line around the circumference of a unit circle
+var circumferenceCoords = [];
+
+for (i = 0; i < segments; ++i)
+{
+    angle = i * 2*pi / segments;
+
+    circumferenceCoords.push(cos(angle));
+    circumferenceCoords.push(sin(angle));
+}
+
 // Coordinates for the inside of a unit circle
 var insideCoords =
     [0, 0,  // center vertex
@@ -42,26 +53,41 @@ for (i = 1; i <= segments; ++i)
     outsideCoords.push(1e5*sin(angle));
 }
 
+var CircleType = {
+    Circumference: "circumference",        // Both inside and outside are left open,
+                        // only the circumference is drawn
+    Inside: "inside",   // Inside will be filled, outside left open
+    Outside: "outside", // Outside will be filled, inside left open
+};
+
 // x and y are the coordinates of the circle's center, r is the radius.
-// if the fourth parameter is true, the outside will be rendered instead
-// of the inside.
-function Circle(x, y, r, outside)
+// The fourth parameter should be a member of CircleType (see above).
+// The default type is CircleType.Circumference.
+function Circle(x, y, r, type)
 {
     this.x = x;
     this.y = y;
     this.r = r;
 
-    this.outside = !!outside; // convert to boolean
+    this.type = type || CircleType.Circumference;
 
     // Initialize attribute buffers
     var coords;
     var i;
     var angle;
 
-    if (!outside)
+    switch(this.type)
+    {
+    case CircleType.Inside:
         coords = insideCoords;
-    else
+        break;
+    case CircleType.Outside:
         coords = outsideCoords;
+        break;
+    case CircleType.Circumference:
+    default:
+        coords = circumferenceCoords;
+    }
 
     this.vertices = {};
     this.vertices.data = new Float32Array(coords);
@@ -89,24 +115,32 @@ function Circle(x, y, r, outside)
 
 Circle.prototype.render = function()
 {
-    gl.useProgram(defaultProgram.program);
+    gl.useProgram(circleProgram.program);
 
-    gl.uniform2f(defaultProgram.uCenter, this.x, this.y);
-    gl.uniform1f(defaultProgram.uR, this.r);
+    gl.uniform2f(circleProgram.uCenter, this.x, this.y);
+    gl.uniform1f(circleProgram.uR, this.r);
 
-    gl.enableVertexAttribArray(defaultProgram.aPos);
+    gl.enableVertexAttribArray(circleProgram.aPos);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertices.bufferId);
-    gl.vertexAttribPointer(defaultProgram.aPos, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(circleProgram.aPos, 2, gl.FLOAT, false, 0, 0);
 
-    gl.enableVertexAttribArray(defaultProgram.aColor);
+    gl.enableVertexAttribArray(circleProgram.aColor);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.colors.bufferId);
-    gl.vertexAttribPointer(defaultProgram.aColor, 4, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(circleProgram.aColor, 4, gl.FLOAT, false, 0, 0);
 
-    if (!this.outside)
+    switch(this.type)
+    {
+    case CircleType.Inside:
         gl.drawArrays(gl.TRIANGLE_FAN, 0, 2 + segments);
-    else
+        break;
+    case CircleType.Outside:
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 2 + 2*segments);
+        break;
+    case CircleType.Circumference:
+    default:
+        gl.drawArrays(gl.LINE_LOOP, 0, segments);
+    }
 
-    gl.disableVertexAttribArray(defaultProgram.aPos);
-    gl.disableVertexAttribArray(defaultProgram.aColor);
+    gl.disableVertexAttribArray(circleProgram.aPos);
+    gl.disableVertexAttribArray(circleProgram.aColor);
 };

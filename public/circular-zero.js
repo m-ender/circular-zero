@@ -5,7 +5,7 @@ var debugBox;
 var gl;
 
 // Objects holding data for individual shader programs
-var defaultProgram = {};
+var circleProgram = {};
 
 // Textures
 // We will use three textures, whose roles will be shifted circularly every frame
@@ -61,22 +61,22 @@ function init()
     gl.clearColor(1, 1, 1, 1);
 
     // Load shaders and get uniform locations
-    defaultProgram.program = InitShaders(gl, "default-vertex-shader", "default-fragment-shader");
+    circleProgram.program = InitShaders(gl, "circle-vertex-shader", "circle-fragment-shader");
     // add uniform locations
-    defaultProgram.uCenter = gl.getUniformLocation(defaultProgram.program, "uCenter");
-    defaultProgram.uR = gl.getUniformLocation(defaultProgram.program, "uR");
+    circleProgram.uCenter = gl.getUniformLocation(circleProgram.program, "uCenter");
+    circleProgram.uR = gl.getUniformLocation(circleProgram.program, "uR");
     // add attribute locations
-    defaultProgram.aPos = gl.getAttribLocation(defaultProgram.program, "aPos");
-    defaultProgram.aColor = gl.getAttribLocation(defaultProgram.program, "aColor");
+    circleProgram.aPos = gl.getAttribLocation(circleProgram.program, "aPos");
+    circleProgram.aColor = gl.getAttribLocation(circleProgram.program, "aColor");
 
     // fill uniforms that are already known
-    // gl.useProgram(defaultProgram.program);
-    // gl.uniform1i(defaultProgram.uBCTexture, 0);
+    // gl.useProgram(circleProgram.program);
+    // gl.uniform1i(circleProgram.uBCTexture, 0);
 
     gl.useProgram(null);
 
-    circles.push(new Circle(0, 0, 1, true));
-    circles.push(new Circle(0, 0, 0.9));
+    circles.push(new Circle(0, 0, 1, CircleType.Outside));
+    circles.push(new Circle(1, -1, 1, CircleType.Circumference));
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
