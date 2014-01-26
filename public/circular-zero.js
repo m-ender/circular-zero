@@ -1,4 +1,8 @@
 var atan2 = Math.atan2;
+var pi = Math.PI;
+var abs = Math.abs;
+var sqrt = Math.sqrt;
+var pow = Math.pow;
 
 var canvas;
 var messageBox;
@@ -32,8 +36,15 @@ var fps = 60;
 var interval = 1000/fps;
 var lastTime;
 
-var circles = [];
+var rootCircle = null;
+
+var cursor = null;
+
+var activeLine = null;
+var activeCircle = null;
+
 var lines = [];
+var circles = [];
 
 var mouseDown = null;
 
@@ -92,10 +103,8 @@ function init()
 
     gl.useProgram(null);
 
-    circles.push(new Circle(0, 0, 1, CircleType.Outside));
-    circles.push(new Circle(-1, 1, 1));
-
-    lines.push(new Line(atan2(1, 2), LineType.Right));
+    rootCircle = new Circle(0, 0, 1, CircleType.Outside);
+    cursor = new Circle(1, 0, 0.05, CircleType.Inside, 0.5);
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -184,8 +193,17 @@ function drawScreen()
     gl.viewport(0, 0, viewPort.width, viewPort.height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+    cursor.render();
+    rootCircle.render();
+
     circles.forEach(function(c) { c.render(); });
     lines.forEach(function(l) { l.render(); });
+
+    if (activeCircle)
+        activeCircle.render();
+
+    if (activeLine)
+        activeLine.render();
 
     gl.disable(gl.BLEND);
 }
@@ -197,12 +215,38 @@ function handleMouseMove(event) {
     debugBox.find('#xcoord').html(coords.x);
     debugBox.find('#ycoord').html(coords.y);
 
-    lines[0].angle = atan2(coords.y, coords.x);
-
-    if (false) //mouseDown
+    if (mouseDown)
     {
-        // handle mouse dragging
-        // mouseDown is an object with the coordinates of where you clicked
+        if (snapToLine(coords.x, coords.y))
+        {
+            activeCircle.hide();
+            activeLine.show();
+        }
+        else
+        {
+            activeCircle.show();
+            activeLine.hide();
+
+            // Calculate position of the circle, based on cursor
+            // and mouse position.
+
+            var mu = (pow(cursor.x - coords.x, 2) + pow(cursor.y - coords.y, 2)) / (cursor.x * coords.y - cursor.y * coords.x);
+
+            var x = cursor.x - mu * cursor.y / 2;
+            var y = cursor.y + mu * cursor.x / 2;
+
+            activeCircle.x = x;
+            activeCircle.y = y;
+
+            activeCircle.r = sqrt(pow(x - cursor.x, 2) + pow(y - cursor.y, 2));
+        }
+    }
+    else
+    {
+        var angle = atan2(coords.y, coords.x);
+
+        cursor.x = cos(angle);
+        cursor.y = sin(angle);
     }
 }
 
@@ -214,6 +258,10 @@ function handleMouseDown(event) {
     debugBox.find('#ydown').html(coords.y);
 
     mouseDown = coords;
+    activeLine = new Line(atan2(-cursor.y, -cursor.x));
+
+    activeCircle = new Circle(cursor.x, cursor.y, 0.2);
+    activeCircle.hide();
 }
 
 function handleMouseUp(event) {
@@ -235,6 +283,30 @@ function normaliseCursorCoordinates(event, rect)
         x: (2*(event.clientX - rect.left) / resolution - 1) / renderScale,
         y: (1 - 2*(event.clientY - rect.top) / resolution) / renderScale, // invert, to make positive y point upwards
     };
+}
+
+// Determines if cursor and mouse are sufficiently closely aligned
+// to snap to a straight line. Parameters are the coordinates of the
+// mouse.
+function snapToLine(x, y) {
+    if (!activeLine)
+        return false;
+
+    // The angle of the line from the cursor to the mouse.
+    var pointedAngle = atan2(y - cursor.y, x - cursor.x);
+
+    // There is a branch cut at an angle of +/- pi, which means
+    // that if the two angles are really close, but one in the 2nd
+    // and one in the third quadrant, their difference will erroneously
+    // be about 2pi. To fix this, we modify the pointed angle accordingly.
+
+    if (pointedAngle > pi/2 && activeLine.angle < -pi/2)
+        pointedAngle -= 2*pi;
+    else if (pointedAngle < -pi/2 && activeLine.angle > pi/2)
+        pointedAngle += 2*pi;
+
+    // Snap if we're less than 5 degrees away the line
+    return abs(pointedAngle - activeLine.angle) < 2 * pi / 180;
 }
 
 function CheckError(msg)

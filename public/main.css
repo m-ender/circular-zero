@@ -13,6 +13,7 @@ body {
     width: 512px;
     height: 512px;
     display: block;
+    cursor: default;
 }
 
 #message{
