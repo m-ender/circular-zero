@@ -83,7 +83,7 @@ Line.prototype.render = function()
 
     gl.useProgram(lineProgram.program);
 
-    gl.uniform1f(circleProgram.uAngle, this.angle);
+    gl.uniform1f(lineProgram.uAngle, this.angle);
 
     gl.enableVertexAttribArray(lineProgram.aPos);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertices.bufferId);

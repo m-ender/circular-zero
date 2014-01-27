@@ -83,6 +83,7 @@ function init()
     // Load shaders and get uniform locations
     circleProgram.program = InitShaders(gl, "circle-vertex-shader", "circle-fragment-shader");
     // add uniform locations
+    circleProgram.uRenderScale = gl.getUniformLocation(circleProgram.program, "uRenderScale");
     circleProgram.uCenter = gl.getUniformLocation(circleProgram.program, "uCenter");
     circleProgram.uR = gl.getUniformLocation(circleProgram.program, "uR");
     circleProgram.uFromAngle = gl.getUniformLocation(circleProgram.program, "uFromAngle");
@@ -92,13 +93,12 @@ function init()
     circleProgram.aColor = gl.getAttribLocation(circleProgram.program, "aColor");
 
     // fill uniforms that are already known
-    // gl.useProgram(circleProgram.program);
-    // gl.uniform1i(circleProgram.uBCTexture, 0);
-
+    gl.useProgram(circleProgram.program);
+    gl.uniform1f(circleProgram.uRenderScale, renderScale);
 
     lineProgram.program = InitShaders(gl, "line-vertex-shader", "line-fragment-shader");
     // add uniform locations
-    circleProgram.uAngle = gl.getUniformLocation(lineProgram.program, "uAngle");
+    lineProgram.uAngle = gl.getUniformLocation(lineProgram.program, "uAngle");
     // add attribute locations
     lineProgram.aPos = gl.getAttribLocation(lineProgram.program, "aPos");
     lineProgram.aColor = gl.getAttribLocation(lineProgram.program, "aColor");
@@ -107,10 +107,6 @@ function init()
 
     rootCircle = new Circle(0, 0, 1, CircleType.Outside);
     cursor = new Circle(1, 0, 0.05, CircleType.Inside, 0, 2*pi, 0.5);
-
-    circles.push(new Circle(0, 0, 0.5, CircleType.Inside, pi/7, 13*pi/7));
-    circles.push(new Circle(0.2, 0, 0.5, CircleType.Inside, pi/7, -pi/7));
-    circles.push(new Circle(0.0, 0, 0.7, CircleType.Line, pi/7, 13*pi/7));
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 

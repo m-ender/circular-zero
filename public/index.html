@@ -20,6 +20,8 @@
     <script id="circle-vertex-shader" type="x-shader/x-vertex">
         #define PI 3.1415926535897932384626433832795
 
+        uniform float uRenderScale;
+
         uniform vec2 uCenter;
         uniform float uR;
         uniform float uFromAngle;
@@ -42,11 +44,11 @@
             // and faraway vertices for circle insides and outsides
             float r = aPos.x*aPos.x + aPos.y*aPos.y;
 
-            // The factor of 0.9 is so that our viewport sees slightly more than
-            // the [-1, 1] region.
-            gl_Position = vec4(0.9 * (uR * r * cos(mappedAngle) + uCenter.x),
-                               0.9 * (uR * r * sin(mappedAngle) + uCenter.y),
-                               0.9 * aPos.z,
+            // The render scale shrinks or grows the viewport and refers to which percentage
+            // of the screen will be filled by the [-1, 1] coordinate range.
+            gl_Position = vec4(uRenderScale * (uR * r * cos(mappedAngle) + uCenter.x),
+                               uRenderScale * (uR * r * sin(mappedAngle) + uCenter.y),
+                               uRenderScale * aPos.z,
                                aPos.w);
         }
     </script>
