@@ -121,11 +121,20 @@ function Circle(x, y, r, type, fromAngle, toAngle, color)
     gl.bufferData(gl.ARRAY_BUFFER, this.colors.data, gl.STATIC_DRAW);
 }
 
+// Convenient setters
+Circle.prototype.move = function(x, y) {
+    this.x = x;
+    this.y = y;
+};
+
+Circle.prototype.resize = function(r) {
+    this.r = r;
+};
+
 Circle.prototype.hide = function() { this.hidden = true; };
 Circle.prototype.show = function() { this.hidden = false; };
 
-Circle.prototype.render = function()
-{
+Circle.prototype.render = function() {
     if (this.hidden) return;
 
     gl.useProgram(circleProgram.program);

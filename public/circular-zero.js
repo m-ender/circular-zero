@@ -242,18 +242,16 @@ function handleMouseMove(event) {
             var x = cursor.x - mu * cursor.y / 2;
             var y = cursor.y + mu * cursor.x / 2;
 
-            activeCircle.x = x;
-            activeCircle.y = y;
+            activeCircle.move(x, y);
 
-            activeCircle.r = sqrt(pow(x - cursor.x, 2) + pow(y - cursor.y, 2));
+            activeCircle.resize(sqrt(pow(x - cursor.x, 2) + pow(y - cursor.y, 2)));
         }
     }
     else
     {
         var angle = atan2(coords.y, coords.x);
 
-        cursor.x = cos(angle);
-        cursor.y = sin(angle);
+        cursor.move(cos(angle), sin(angle));
     }
 }
 
