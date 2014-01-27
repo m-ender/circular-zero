@@ -13,7 +13,7 @@ var colorFunction = function () { return 0; };
 // Coordinates for a line around the circumference of a unit circle
 var circumferenceCoords = [];
 
-for (i = 0; i < segments; ++i)
+for (i = 0; i <= segments; ++i)
 {
     angle = i * 2*pi / segments;
 
@@ -63,14 +63,19 @@ var CircleType = {
 // x and y are the coordinates of the circle's center, r is the radius.
 // The fourth parameter should be a member of CircleType (see above).
 // The default type is CircleType.Circumference.
+// fromAngle and toAngle are optional and can be used to draw an arc only. Use
+// angles in the range [0, 2pi].
 // The color is optional and can be used to overwrite the global colorFunction.
-function Circle(x, y, r, type, color)
+function Circle(x, y, r, type, fromAngle, toAngle, color)
 {
     this.hidden = false;
 
     this.x = x;
     this.y = y;
     this.r = r;
+
+    this.fromAngle = fromAngle || 0;
+    this.toAngle = toAngle || 2*pi;
 
     this.type = type || CircleType.Circumference;
 
@@ -127,6 +132,8 @@ Circle.prototype.render = function()
 
     gl.uniform2f(circleProgram.uCenter, this.x, this.y);
     gl.uniform1f(circleProgram.uR, this.r);
+    gl.uniform1f(circleProgram.uFromAngle, this.fromAngle);
+    gl.uniform1f(circleProgram.uToAngle, this.toAngle);
 
     gl.enableVertexAttribArray(circleProgram.aPos);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertices.bufferId);
@@ -146,7 +153,9 @@ Circle.prototype.render = function()
         break;
     case CircleType.Circumference:
     default:
-        gl.drawArrays(gl.LINE_LOOP, 0, segments);
+        // We use line strip so that the shader can bend the
+        // vertices to give an arc.
+        gl.drawArrays(gl.LINE_STRIP, 0, segments + 1);
     }
 
     gl.disableVertexAttribArray(circleProgram.aPos);

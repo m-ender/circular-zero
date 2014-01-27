@@ -85,6 +85,8 @@ function init()
     // add uniform locations
     circleProgram.uCenter = gl.getUniformLocation(circleProgram.program, "uCenter");
     circleProgram.uR = gl.getUniformLocation(circleProgram.program, "uR");
+    circleProgram.uFromAngle = gl.getUniformLocation(circleProgram.program, "uFromAngle");
+    circleProgram.uToAngle = gl.getUniformLocation(circleProgram.program, "uToAngle");
     // add attribute locations
     circleProgram.aPos = gl.getAttribLocation(circleProgram.program, "aPos");
     circleProgram.aColor = gl.getAttribLocation(circleProgram.program, "aColor");
@@ -104,7 +106,11 @@ function init()
     gl.useProgram(null);
 
     rootCircle = new Circle(0, 0, 1, CircleType.Outside);
-    cursor = new Circle(1, 0, 0.05, CircleType.Inside, 0.5);
+    cursor = new Circle(1, 0, 0.05, CircleType.Inside, 0, 2*pi, 0.5);
+
+    circles.push(new Circle(0, 0, 0.5, CircleType.Inside, pi/7, 13*pi/7));
+    circles.push(new Circle(0.2, 0, 0.5, CircleType.Inside, pi/7, -pi/7));
+    circles.push(new Circle(0.0, 0, 0.7, CircleType.Line, pi/7, 13*pi/7));
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 

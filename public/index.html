@@ -18,8 +18,12 @@
     <![endif]-->
 
     <script id="circle-vertex-shader" type="x-shader/x-vertex">
+        #define PI 3.1415926535897932384626433832795
+
         uniform vec2 uCenter;
         uniform float uR;
+        uniform float uFromAngle;
+        uniform float uToAngle;
 
         attribute vec4 aPos;
         attribute vec4 aColor;
@@ -29,9 +33,21 @@
         void main()
         {
             vColor = aColor;
+            // Map the angle of the given vertex from [0,2*pi] to [0,1] to [uFromAngle,uToAngle]
+            float t = atan(aPos.y, aPos.x) / (2.0*PI);
+            if (t < 0.0) t += 1.0; // atan actually returns a (-pi, pi] range
+            float mappedAngle = t * (uToAngle - uFromAngle) + uFromAngle;
+
+            // We also need the initial distance from the origin to account for origin-vertices
+            // and faraway vertices for circle insides and outsides
+            float r = aPos.x*aPos.x + aPos.y*aPos.y;
+
             // The factor of 0.9 is so that our viewport sees slightly more than
             // the [-1, 1] region.
-            gl_Position = (vec4(aPos.xyz * uR, aPos.w) + vec4(uCenter, 0, 0)) * vec4(0.9, 0.9, 0.9, 1.0);
+            gl_Position = vec4(0.9 * (uR * r * cos(mappedAngle) + uCenter.x),
+                               0.9 * (uR * r * sin(mappedAngle) + uCenter.y),
+                               0.9 * aPos.z,
+                               aPos.w);
         }
     </script>
 
