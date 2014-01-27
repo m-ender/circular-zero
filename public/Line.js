@@ -1,8 +1,8 @@
 var sin = Math.sin;
 var cos = Math.cos;
 
-var lineCoords = [-10, 0,
-                   10, 0];
+var lineCoords = [-1, 0,
+                   1, 0];
 
 var leftCoords = [-10,  0,
                    10,  0,
@@ -25,13 +25,18 @@ var LineType = {
 // Adding pi to the angle will switch the roles of left and right!
 // The third parameter should be a member of LineType (see above).
 // The default type is LineType.Line.
-function Line(angle, type)
+// toDistance is an optional parameter to draw only part of a LineType.Line. It
+// needs to be in range [-1, 1], with -1 corresponding to the start of the line
+// and 1 corresponding to the end of a full line.
+function Line(angle, type, toDistance)
 {
     this.hidden = false;
 
     this.angle = angle;
 
     this.type = type || LineType.Line;
+
+    this.toDistance = (toDistance === undefined) ? 1 : toDistance;
 
     // Initialize attribute buffers
     var coords;
@@ -84,6 +89,11 @@ Line.prototype.render = function()
     gl.useProgram(lineProgram.program);
 
     gl.uniform1f(lineProgram.uAngle, this.angle);
+
+    if (this.type === LineType.Line)
+        gl.uniform1f(lineProgram.uToDistance, this.toDistance);
+    else
+        gl.uniform1f(lineProgram.uToDistance, 10);
 
     gl.enableVertexAttribArray(lineProgram.aPos);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertices.bufferId);

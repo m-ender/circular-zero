@@ -81,7 +81,7 @@ function init()
     gl.clearColor(1, 1, 1, 1);
 
     // Load shaders and get uniform locations
-    circleProgram.program = InitShaders(gl, "circle-vertex-shader", "circle-fragment-shader");
+    circleProgram.program = InitShaders(gl, "circle-vertex-shader", "minimal-fragment-shader");
     // add uniform locations
     circleProgram.uRenderScale = gl.getUniformLocation(circleProgram.program, "uRenderScale");
     circleProgram.uCenter = gl.getUniformLocation(circleProgram.program, "uCenter");
@@ -96,12 +96,17 @@ function init()
     gl.useProgram(circleProgram.program);
     gl.uniform1f(circleProgram.uRenderScale, renderScale);
 
-    lineProgram.program = InitShaders(gl, "line-vertex-shader", "line-fragment-shader");
+    lineProgram.program = InitShaders(gl, "line-vertex-shader", "minimal-fragment-shader");
     // add uniform locations
+    lineProgram.uRenderScale = gl.getUniformLocation(lineProgram.program, "uRenderScale");
     lineProgram.uAngle = gl.getUniformLocation(lineProgram.program, "uAngle");
+    lineProgram.uToDistance = gl.getUniformLocation(lineProgram.program, "uToDistance");
     // add attribute locations
     lineProgram.aPos = gl.getAttribLocation(lineProgram.program, "aPos");
     lineProgram.aColor = gl.getAttribLocation(lineProgram.program, "aColor");
+
+    gl.useProgram(lineProgram.program);
+    gl.uniform1f(lineProgram.uRenderScale, renderScale);
 
     gl.useProgram(null);
 

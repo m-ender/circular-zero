@@ -56,20 +56,11 @@
         }
     </script>
 
-    <script id="circle-fragment-shader" type="x-shader/x-fragment">
-        #ifdef GL_ES
-        precision mediump float;
-        #endif
-
-        varying vec4 vColor;
-
-        void main() {
-            gl_FragColor = vColor;
-        }
-    </script>
-
     <script id="line-vertex-shader" type="x-shader/x-vertex">
+        uniform float uRenderScale;
+
         uniform float uAngle;
+        uniform float uToDistance;
 
         attribute vec4 aPos;
         attribute vec4 aColor;
@@ -79,15 +70,24 @@
         void main()
         {
             vColor = aColor;
-            // No need for scaling, because all lines go through the center
-            gl_Position = vec4( cos(uAngle)*aPos.x - sin(uAngle)*aPos.y,
-                                sin(uAngle)*aPos.x + cos(uAngle)*aPos.y,
+
+            // We should probably separate out a different shader program for
+            // drawing lines only, which uses a geometry shader to modify only
+            // the end vertex, but leave the starting vertex as is.
+            // For now, here is a hack though:
+            float x;
+            if (aPos.x > 0.0) x = uToDistance;
+            else x = aPos.x;
+            // (the other part of the hack is in the rendering code of Line.js)
+
+            gl_Position = vec4( uRenderScale * (cos(uAngle)*x - sin(uAngle)*aPos.y),
+                                uRenderScale * (sin(uAngle)*x + cos(uAngle)*aPos.y),
                                 0.0,
                                 1.0) ;
         }
     </script>
 
-    <script id="line-fragment-shader" type="x-shader/x-fragment">
+    <script id="minimal-fragment-shader" type="x-shader/x-fragment">
         #ifdef GL_ES
         precision mediump float;
         #endif
