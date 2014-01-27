@@ -75,7 +75,7 @@ function Circle(x, y, r, type, fromAngle, toAngle, color)
     this.r = r;
 
     this.fromAngle = fromAngle || 0;
-    this.toAngle = toAngle || 2*pi;
+    this.toAngle = (toAngle === undefined) ? 2*pi : toAngle;
 
     this.type = type || CircleType.Circumference;
 
