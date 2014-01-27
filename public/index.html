@@ -35,9 +35,12 @@
         void main()
         {
             vColor = aColor;
-            // Map the angle of the given vertex from [0,2*pi] to [0,1] to [uFromAngle,uToAngle]
+            // Map the angle of the given vertex from (-pi,pi] to [uFromAngle,uToAngle)
+            // (-pi, pi] -> (-0.5, 0.5]
             float t = atan(aPos.y, aPos.x) / (2.0*PI);
-            if (t < 0.0) t += 1.0; // atan actually returns a (-pi, pi] range
+            // map the (-0.5, 0.0) range to (0.5, 1)
+            t = mod(t, 1.0);
+            // map [0.0, 1.0) to [uFromAngle, uToAngle)
             float mappedAngle = t * (uToAngle - uFromAngle) + uFromAngle;
 
             // We also need the initial distance from the origin to account for origin-vertices
