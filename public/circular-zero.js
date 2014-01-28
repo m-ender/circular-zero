@@ -48,6 +48,9 @@ var circles = [];
 
 var mouseDown = null;
 
+// Gameplay configuration
+var cursorSpeed = 2; // given in length units per second
+
 window.onload = init;
 
 function init()
@@ -118,7 +121,7 @@ function init()
     CheckError();
 
     lastTime = Date.now();
-    render();
+    update();
 }
 
 function InitShaders(gl, vertexShaderId, fragmentShaderId)
@@ -176,10 +179,10 @@ function InitShaders(gl, vertexShaderId, fragmentShaderId)
     return program;
 }
 
-// This is a fixed-framerate rendering loop.
-function render()
+// This is a fixed-framerate game loop.
+function update()
 {
-    window.requestAnimFrame(render, canvas);
+    window.requestAnimFrame(update, canvas);
 
     currentTime = Date.now();
     var dTime = currentTime - lastTime;
@@ -188,6 +191,9 @@ function render()
     {
         // This drops a frame if dTime is greater than two intervals
         lastTime = currentTime - (dTime % interval);
+
+        //if (lines.length && lines[lines.length-1].toDistance < 1)
+        //    lines[lines.length-1].toDistance += cursorSpeed * dTime / 1000;
 
         drawScreen();
     }
@@ -277,6 +283,17 @@ function handleMouseUp(event) {
     debugBox.find('#yup').html(coords.y);
 
     mouseDown = null;
+
+    if (!activeCircle.hidden)
+        circles.push(activeCircle);
+    else
+    {
+        lines.push(activeLine);
+        //activeLine.toDistance = -1;
+    }
+
+    activeLine = null;
+    activeCircle = null;
 }
 
 // Takes the mouse event and the rectangle to normalise for
