@@ -1,5 +1,6 @@
 var sin = Math.sin;
 var cos = Math.cos;
+var pi = Math.PI;
 
 var lineCoords = [-1, 0,
                    1, 0];
@@ -118,4 +119,17 @@ Line.prototype.render = function()
 
     gl.disableVertexAttribArray(lineProgram.aPos);
     gl.disableVertexAttribArray(lineProgram.aColor);
+};
+
+// Double-dispatch collision detection
+Line.prototype.collidesWith = function(other) {
+    return other.collidesWithLine(this);
+};
+
+Line.prototype.collidesWithLine = function(other) {
+    return collisionDetector.collideLines(this, other);
+};
+
+Line.prototype.collidesWithCircle = function(other) {
+    return collisionDetector.collideLineCircle(this, other);
 };

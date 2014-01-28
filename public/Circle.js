@@ -170,3 +170,16 @@ Circle.prototype.render = function() {
     gl.disableVertexAttribArray(circleProgram.aPos);
     gl.disableVertexAttribArray(circleProgram.aColor);
 };
+
+// Double-dispatch collision detection
+Circle.prototype.collidesWith = function(other) {
+    return other.collidesWithCircle(this);
+};
+
+Circle.prototype.collidesWithLine = function(other) {
+    return collisionDetector.collideLineCircle(other, this);
+};
+
+Circle.prototype.collidesWithCircle = function(other) {
+    return collisionDetector.collideCircles(this, other);
+};
