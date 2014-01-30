@@ -183,3 +183,15 @@ Circle.prototype.collidesWithLine = function(other) {
 Circle.prototype.collidesWithCircle = function(other) {
     return collisionDetector.collideCircles(this, other);
 };
+
+Circle.prototype.intersectionsWith = function(other) {
+    return other.intersectionsWithCircle(this);
+};
+
+Circle.prototype.intersectionsWithLine = function(other) {
+    return collisionDetector.intersectionsLineCircle(other, this);
+};
+
+Circle.prototype.intersectionsWithCircle = function(other) {
+    return collisionDetector.intersectionsCircles(this, other);
+};

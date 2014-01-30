@@ -45,6 +45,7 @@ var activeCircle = null;
 
 var lines = [];
 var circles = [];
+var markers = [];
 
 var mouseDown = null;
 
@@ -211,6 +212,7 @@ function drawScreen()
 
     circles.forEach(function(c) { c.render(); });
     lines.forEach(function(l) { l.render(); });
+    markers.forEach(function(m) { m.render(); });
 
     if (activeCircle)
         activeCircle.render();
@@ -285,11 +287,23 @@ function handleMouseUp(event) {
     mouseDown = null;
 
     if (!activeCircle.hidden)
+    {
         circles.push(activeCircle);
+        lines.forEach(function(l) {
+            activeCircle.intersectionsWith(l).forEach(function(p) {
+                markers.push(new Circle(p.x, p.y, 0.02, CircleType.Inside, 0, 2*pi, 0.2));
+            });
+        });
+    }
     else
     {
         lines.push(activeLine);
         //activeLine.toDistance = -1;
+        circles.forEach(function(c) {
+            activeLine.intersectionsWith(c).forEach(function(p) {
+                markers.push(new Circle(p.x, p.y, 0.02, CircleType.Inside, 0, 2*pi, 0.2));
+            });
+        });
     }
 
     activeLine = null;

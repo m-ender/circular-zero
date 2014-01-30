@@ -133,3 +133,15 @@ Line.prototype.collidesWithLine = function(other) {
 Line.prototype.collidesWithCircle = function(other) {
     return collisionDetector.collideLineCircle(this, other);
 };
+
+Line.prototype.intersectionsWith = function(other) {
+    return other.intersectionsWithLine(this);
+};
+
+Line.prototype.intersectionsWithLine = function(other) {
+    return collisionDetector.intersectionsLines(this, other);
+};
+
+Line.prototype.intersectionsWithCircle = function(other) {
+    return collisionDetector.intersectionsLineCircle(this, other);
+};
