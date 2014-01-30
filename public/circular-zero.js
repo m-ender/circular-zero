@@ -288,22 +288,27 @@ function handleMouseUp(event) {
 
     if (!activeCircle.hidden)
     {
-        circles.push(activeCircle);
         lines.forEach(function(l) {
             activeCircle.intersectionsWith(l).forEach(function(p) {
                 markers.push(new Circle(p.x, p.y, 0.02, CircleType.Inside, 0, 2*pi, 0.2));
             });
         });
+        circles.forEach(function(c) {
+            activeCircle.intersectionsWith(c).forEach(function(p) {
+                markers.push(new Circle(p.x, p.y, 0.02, CircleType.Inside, 0, 2*pi, 0.2));
+            });
+        });
+        circles.push(activeCircle);
     }
     else
     {
-        lines.push(activeLine);
-        //activeLine.toDistance = -1;
         circles.forEach(function(c) {
             activeLine.intersectionsWith(c).forEach(function(p) {
                 markers.push(new Circle(p.x, p.y, 0.02, CircleType.Inside, 0, 2*pi, 0.2));
             });
         });
+        lines.push(activeLine);
+        //activeLine.toDistance = -1;
     }
 
     activeLine = null;
