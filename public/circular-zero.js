@@ -317,6 +317,9 @@ function handleMouseUp(event) {
             activeCircle.toAngle -= 2*pi;
         else if (activeCircle.toAngle - activeCircle.fromAngle < -pi)
             activeCircle.toAngle += 2*pi;
+
+        var endPoint = activeCircle.getEndPoint();
+        markers.push(new Circle(endPoint.x, endPoint.y, 0.02, CircleType.Inside, 0, 2*pi, 0.2));
     }
     else
     {

@@ -171,6 +171,16 @@ Circle.prototype.render = function() {
     gl.disableVertexAttribArray(circleProgram.aColor);
 };
 
+// Returns the point corresponding to toDistance
+Circle.prototype.getEndPoint = function(other) {
+    // Construct point from radius, centre and this.toAngle
+    return {
+        x: this.x + this.r * cos(this.toAngle),
+        y: this.y + this.r * sin(this.toAngle)
+    };
+};
+
+
 // Double-dispatch collision detection
 Circle.prototype.collidesWith = function(other) {
     return other.collidesWithCircle(this);
