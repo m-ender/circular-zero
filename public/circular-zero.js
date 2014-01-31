@@ -288,27 +288,14 @@ function handleMouseUp(event) {
 
     if (!activeCircle.hidden)
     {
-        lines.forEach(function(l) {
-            activeCircle.intersectionsWith(l).forEach(function(p) {
-                markers.push(new Circle(p.x, p.y, 0.02, CircleType.Inside, 0, 2*pi, 0.2));
-            });
-        });
-        circles.forEach(function(c) {
-            activeCircle.intersectionsWith(c).forEach(function(p) {
-                markers.push(new Circle(p.x, p.y, 0.02, CircleType.Inside, 0, 2*pi, 0.2));
-            });
-        });
         circles.push(activeCircle);
     }
     else
     {
-        circles.forEach(function(c) {
-            activeLine.intersectionsWith(c).forEach(function(p) {
-                markers.push(new Circle(p.x, p.y, 0.02, CircleType.Inside, 0, 2*pi, 0.2));
-            });
-        });
+        activeLine.toDistance = Math.random()*2-1;
         lines.push(activeLine);
-        //activeLine.toDistance = -1;
+        var endPoint = activeLine.getEndPoint();
+        markers.push(new Circle(endPoint.x, endPoint.y, 0.02, CircleType.Inside, 0, 2*pi, 0.2));
     }
 
     activeLine = null;

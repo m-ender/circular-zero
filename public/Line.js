@@ -121,6 +121,18 @@ Line.prototype.render = function()
     gl.disableVertexAttribArray(lineProgram.aColor);
 };
 
+// Returns the point corresponding to toDistance
+Line.prototype.getEndPoint = function(other) {
+    // Get normal vector along this.angle
+    var x = cos(this.angle);
+    var y = sin(this.angle);
+
+    return {
+        x: x * this.toDistance,
+        y: y * this.toDistance
+    };
+};
+
 // Double-dispatch collision detection
 Line.prototype.collidesWith = function(other) {
     return other.collidesWithLine(this);
