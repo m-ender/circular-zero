@@ -1,7 +1,3 @@
-var sin = Math.sin;
-var cos = Math.cos;
-var pi = Math.PI;
-
 var lineCoords = [-1, 0,
                    1, 0];
 

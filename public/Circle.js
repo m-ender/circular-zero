@@ -2,10 +2,6 @@
 // to construct the circle from.
 var segments = 100;
 
-var sin = Math.sin;
-var cos = Math.cos;
-var pi = Math.PI;
-
 // Should return a number between 0 and 1 and is currently used for
 // the R, G and B channels. Use Math.random for acid mode!
 var colorFunction = function () { return 0; };

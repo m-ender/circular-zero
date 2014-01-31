@@ -1,9 +1,3 @@
-var pi = Math.PI;
-var sqrt = Math.sqrt;
-var abs = Math.abs;
-var sin = Math.sin;
-var cos = Math.cos;
-
 function CollisionDetector() {
     return this;
 }

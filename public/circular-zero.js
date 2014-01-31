@@ -1,9 +1,3 @@
-var atan2 = Math.atan2;
-var pi = Math.PI;
-var abs = Math.abs;
-var sqrt = Math.sqrt;
-var pow = Math.pow;
-
 var canvas;
 var messageBox;
 var debugBox;
@@ -48,6 +42,9 @@ var circles = [];
 var markers = [];
 
 var mouseDown = false;
+var cursorMoving = false;
+var target = null; // Could be either a .toDistance for activeLine or a .toAngle for activeCircle
+var direction = null; // Only necessary for motion around activeCircle
 
 // Gameplay configuration
 var cursorSpeed = 2; // given in length units per second
@@ -198,8 +195,8 @@ function update()
         // This drops a frame if dTime is greater than two intervals
         lastTime = currentTime - (dTime % interval);
 
-        //if (lines.length && lines[lines.length-1].toDistance < 1)
-        //    lines[lines.length-1].toDistance += cursorSpeed * dTime / 1000;
+        if (cursorMoving)
+            moveCursor(dTime);
 
         drawScreen();
     }
@@ -228,7 +225,53 @@ function drawScreen()
     gl.disable(gl.BLEND);
 }
 
+function moveCursor(dTime)
+{
+    var endPoint;
+
+    if (activeLine)
+    {
+        activeLine.toDistance += cursorSpeed * dTime / 1000;
+
+        if (activeLine.toDistance >= target)
+        {
+            activeLine.toDistance = target;
+            lines.push(activeLine);
+            cursorMoving = false;
+        }
+
+        endPoint = activeLine.getEndPoint();
+        cursor.x = endPoint.x;
+        cursor.y = endPoint.y;
+
+        if (!cursorMoving)
+            activeLine = null;
+    }
+    else if (activeCircle)
+    {
+        // ds = r*dtheta --> dtheta = ds / r
+        activeCircle.toAngle += direction * cursorSpeed * dTime / 1000 / activeCircle.r;
+
+        if (direction * activeCircle.toAngle >= direction * target)
+        {
+            activeCircle.toAngle = target;
+            circles.push(activeCircle);
+            cursorMoving = false;
+        }
+
+        endPoint = activeCircle.getEndPoint();
+        cursor.x = endPoint.x;
+        cursor.y = endPoint.y;
+
+        if (!cursorMoving)
+            activeCircle = null;
+    }
+}
+
 function handleMouseMove(event) {
+    if (cursorMoving)
+        return;
+
     var rect = canvas.getBoundingClientRect();
     var coords = normaliseCursorCoordinates(event, rect);
 
@@ -269,6 +312,9 @@ function handleMouseMove(event) {
 }
 
 function handleMouseDown(event) {
+    if (cursorMoving)
+        return;
+
     var rect = canvas.getBoundingClientRect();
     var coords = normaliseCursorCoordinates(event, rect);
 
@@ -278,11 +324,17 @@ function handleMouseDown(event) {
     mouseDown = true;
     activeLine = new Line(atan2(-cursor.y, -cursor.x));
 
-    activeCircle = new Circle(cursor.x, cursor.y, 0.2, CircleType.Circumference, 0, 2*pi, 0.5);
+    // This position is arbitrary. When the user clicks, the
+    // line will always be shown and the circles parameters
+    // will be recalculated as soon as the mouse is moved.
+    activeCircle = new Circle(cursor.x, cursor.y, 0.2);
     activeCircle.hide();
 }
 
 function handleMouseUp(event) {
+    if (cursorMoving)
+        return;
+
     var rect = canvas.getBoundingClientRect();
     var coords = normaliseCursorCoordinates(event, rect);
 
@@ -293,7 +345,7 @@ function handleMouseUp(event) {
 
     if (!activeCircle.hidden)
     {
-        circles.push(activeCircle);
+        activeLine = null;
         var points = activeCircle.intersectionsWith(rootCircle);
 
         // Get squared distance from one point to cursor
@@ -301,36 +353,40 @@ function handleMouseUp(event) {
         var dy = points[0].y - cursor.y;
         var d2 = dx*dx + dy*dy;
 
-        // Check which point corresponds to the cursor
+        // Check which point corresponds to the cursor and set fromAngle and toAngle accordingly
         if (d2 < 1e-10)
         {
             activeCircle.fromAngle = atan2(points[0].y - activeCircle.y, points[0].x - activeCircle.x);
-            activeCircle.toAngle = atan2(points[1].y - activeCircle.y, points[1].x - activeCircle.x);
+            target = atan2(points[1].y - activeCircle.y, points[1].x - activeCircle.x);
         }
         else
         {
             activeCircle.fromAngle = atan2(points[1].y - activeCircle.y, points[1].x - activeCircle.x);
-            activeCircle.toAngle = atan2(points[0].y - activeCircle.y, points[0].x - activeCircle.x);
+            target = atan2(points[0].y - activeCircle.y, points[0].x - activeCircle.x);
         }
 
-        if (activeCircle.toAngle - activeCircle.fromAngle > pi)
-            activeCircle.toAngle -= 2*pi;
-        else if (activeCircle.toAngle - activeCircle.fromAngle < -pi)
-            activeCircle.toAngle += 2*pi;
+        // Make sure the distance between fromAngle and toAngle is less than pi (otherwise we
+        // might go around the circle in the wrong direction)
+        if (target - activeCircle.fromAngle > pi)
+            target -= 2*pi;
+        else if (target - activeCircle.fromAngle < -pi)
+            target += 2*pi;
 
-        var endPoint = activeCircle.getEndPoint();
-        markers.push(new Circle(endPoint.x, endPoint.y, 0.02, CircleType.Inside, 0, 2*pi, 0.2));
+        // Determine sense of movement
+        direction = sign(target - activeCircle.fromAngle);
+
+        activeCircle.toAngle = activeCircle.fromAngle;
+        cursorMoving = true;
+
     }
     else
     {
-        activeLine.toDistance = Math.random()*2-1;
-        lines.push(activeLine);
-        var endPoint = activeLine.getEndPoint();
-        markers.push(new Circle(endPoint.x, endPoint.y, 0.02, CircleType.Inside, 0, 2*pi, 0.2));
+        activeCircle = null;
+        activeLine.toDistance = -1;
+        target = 1;
+        cursorMoving = true;
     }
 
-    activeLine = null;
-    activeCircle = null;
 }
 
 // Takes the mouse event and the rectangle to normalise for
