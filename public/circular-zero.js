@@ -47,7 +47,7 @@ var lines = [];
 var circles = [];
 var markers = [];
 
-var mouseDown = null;
+var mouseDown = false;
 
 // Gameplay configuration
 var cursorSpeed = 2; // given in length units per second
@@ -68,9 +68,11 @@ function init()
     canvas.width = viewPort.width;
     canvas.height = viewPort.height;
 
-    canvas.addEventListener('mousedown', handleMouseDown, false);
-    canvas.addEventListener('mouseup', handleMouseUp, false);
-    canvas.addEventListener('mousemove', handleMouseMove, false);
+    // By attaching the event to document we can control the cursor from
+    // anywhere on the page and can even drag off the browser window.
+    document.addEventListener('mousedown', handleMouseDown, false);
+    document.addEventListener('mouseup', handleMouseUp, false);
+    document.addEventListener('mousemove', handleMouseMove, false);
 
     messageBox = $('#message');
     debugBox = $('#debug');
@@ -190,6 +192,9 @@ function update()
 
     if (dTime > interval)
     {
+        // Uncomment to see dropped frames
+        //frames (dTime > 2*interval) console.log("UpsX" + Math.floor(dTime/interval));
+
         // This drops a frame if dTime is greater than two intervals
         lastTime = currentTime - (dTime % interval);
 
@@ -270,10 +275,10 @@ function handleMouseDown(event) {
     debugBox.find('#xdown').html(coords.x);
     debugBox.find('#ydown').html(coords.y);
 
-    mouseDown = coords;
+    mouseDown = true;
     activeLine = new Line(atan2(-cursor.y, -cursor.x));
 
-    activeCircle = new Circle(cursor.x, cursor.y, 0.2);
+    activeCircle = new Circle(cursor.x, cursor.y, 0.2, CircleType.Circumference, 0, 2*pi, 0.5);
     activeCircle.hide();
 }
 
@@ -284,11 +289,34 @@ function handleMouseUp(event) {
     debugBox.find('#xup').html(coords.x);
     debugBox.find('#yup').html(coords.y);
 
-    mouseDown = null;
+    mouseDown = false;
 
     if (!activeCircle.hidden)
     {
         circles.push(activeCircle);
+        var points = activeCircle.intersectionsWith(rootCircle);
+
+        // Get squared distance from one point to cursor
+        var dx = points[0].x - cursor.x;
+        var dy = points[0].y - cursor.y;
+        var d2 = dx*dx + dy*dy;
+
+        // Check which point corresponds to the cursor
+        if (d2 < 1e-10)
+        {
+            activeCircle.fromAngle = atan2(points[0].y - activeCircle.y, points[0].x - activeCircle.x);
+            activeCircle.toAngle = atan2(points[1].y - activeCircle.y, points[1].x - activeCircle.x);
+        }
+        else
+        {
+            activeCircle.fromAngle = atan2(points[1].y - activeCircle.y, points[1].x - activeCircle.x);
+            activeCircle.toAngle = atan2(points[0].y - activeCircle.y, points[0].x - activeCircle.x);
+        }
+
+        if (activeCircle.toAngle - activeCircle.fromAngle > pi)
+            activeCircle.toAngle -= 2*pi;
+        else if (activeCircle.toAngle - activeCircle.fromAngle < -pi)
+            activeCircle.toAngle += 2*pi;
     }
     else
     {
