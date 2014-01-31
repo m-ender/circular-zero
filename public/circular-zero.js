@@ -47,7 +47,7 @@ var target = null; // Could be either a .toDistance for activeLine or a .toAngle
 var direction = null; // Only necessary for motion around activeCircle
 
 // Gameplay configuration
-var cursorSpeed = 2; // given in length units per second
+var cursorSpeed = 1; // given in length units per second
 
 window.onload = init;
 
