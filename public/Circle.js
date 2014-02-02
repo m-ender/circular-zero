@@ -103,9 +103,9 @@ function Circle(x, y, r, type, fromAngle, toAngle, color)
     var components = [];
     for (i = 0; i < coords.length / 2; ++i)
     {
-        components.push(color ? color : colorFunction());
-        components.push(color ? color : colorFunction());
-        components.push(color ? color : colorFunction());
+        components.push(color ? color[0] : colorFunction());
+        components.push(color ? color[1] : colorFunction());
+        components.push(color ? color[2] : colorFunction());
         components.push(1.0);
     }
 
@@ -200,4 +200,11 @@ Circle.prototype.intersectionsWithLine = function(other) {
 
 Circle.prototype.intersectionsWithCircle = function(other) {
     return collisionDetector.intersectionsCircles(this, other);
+};
+
+// Does the given point lie left (inside) or right (outside)
+// of the circumference? True for the former, false for the
+// latter.
+Circle.prototype.liesLeftOf = function(x, y) {
+    return collisionDetector.liesLeftOfCircle(x, y, this);
 };

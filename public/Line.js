@@ -25,7 +25,8 @@ var LineType = {
 // toDistance is an optional parameter to draw only part of a LineType.Line. It
 // needs to be in range [-1, 1], with -1 corresponding to the start of the line
 // and 1 corresponding to the end of a full line.
-function Line(angle, type, toDistance)
+// The color is optional and can be used to overwrite the global colorFunction.
+function Line(angle, type, toDistance, color)
 {
     this.hidden = false;
 
@@ -62,9 +63,9 @@ function Line(angle, type, toDistance)
     var components = [];
     for (i = 0; i < coords.length / 2; ++i)
     {
-        components.push(0);
-        components.push(0);
-        components.push(0);
+        components.push(color ? color[0] : 0);
+        components.push(color ? color[1] : 0);
+        components.push(color ? color[2] : 0);
         components.push(1);
     }
 
@@ -152,4 +153,10 @@ Line.prototype.intersectionsWithLine = function(other) {
 
 Line.prototype.intersectionsWithCircle = function(other) {
     return collisionDetector.intersectionsLineCircle(this, other);
+};
+
+// Does the given point lie left or right of the line?
+// True for the former, false for the latter.
+Line.prototype.liesLeftOf = function(x, y) {
+    return collisionDetector.liesLeftOfLine(x, y, this);
 };

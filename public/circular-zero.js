@@ -113,8 +113,12 @@ function init()
 
     gl.useProgram(null);
 
-    rootCircle = new Circle(0, 0, 1, CircleType.Outside);
-    cursor = new Circle(1, 0, 0.05, CircleType.Inside, 0, 2*pi, 0.5);
+    var innerLeafNode = new OpenLeaf([]);
+    var outerLeafNode = new ClosedLeaf();
+    rootCircle = new InnerNode(null, new Circle(0, 0, 1, CircleType.Outside), innerLeafNode, outerLeafNode);
+    cursor = new Circle(1, 0, 0.05, CircleType.Inside, 0, 2*pi, [0, 0.7, 0]);
+
+    displayTree();
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -212,8 +216,8 @@ function drawScreen()
     cursor.render();
     rootCircle.render();
 
-    circles.forEach(function(c) { c.render(); });
-    lines.forEach(function(l) { l.render(); });
+    //circles.forEach(function(c) { c.render(); });
+    //lines.forEach(function(l) { l.render(); });
     markers.forEach(function(m) { m.render(); });
 
     if (activeCircle)
@@ -237,6 +241,8 @@ function moveCursor(dTime)
         {
             activeLine.toDistance = target;
             lines.push(activeLine);
+            rootCircle.insert(activeLine);
+            displayTree();
             cursorMoving = false;
         }
 
@@ -256,6 +262,8 @@ function moveCursor(dTime)
         {
             activeCircle.toAngle = target;
             circles.push(activeCircle);
+            rootCircle.insert(activeCircle);
+            displayTree();
             cursorMoving = false;
         }
 
@@ -346,7 +354,7 @@ function handleMouseUp(event) {
     if (!activeCircle.hidden)
     {
         activeLine = null;
-        var points = activeCircle.intersectionsWith(rootCircle);
+        var points = activeCircle.intersectionsWith(rootCircle.geometry);
 
         // Get squared distance from one point to cursor
         var dx = points[0].x - cursor.x;
@@ -414,14 +422,21 @@ function snapToLine(x, y) {
     // that if the two angles are really close, but one in the 2nd
     // and one in the third quadrant, their difference will erroneously
     // be about 2pi. To fix this, we modify the pointed angle accordingly.
+    // We actually reduce the difference below pi/2, because an angle
+    // difference of pi is also (anti)parallel.
 
-    if (pointedAngle > pi/2 && activeLine.angle < -pi/2)
-        pointedAngle -= 2*pi;
-    else if (pointedAngle < -pi/2 && activeLine.angle > pi/2)
-        pointedAngle += 2*pi;
+    while (pointedAngle - activeLine.angle > pi/2)
+        pointedAngle -= pi;
+    while (pointedAngle - activeLine.angle < -pi/2)
+        pointedAngle += pi;
 
     // Snap if we're less than 5 degrees away the line
     return abs(pointedAngle - activeLine.angle) < 2 * pi / 180;
+}
+
+function displayTree()
+{
+    debugBox.find('#kdtree').html(rootCircle.toString().replace(/\n/g, '<br>'));
 }
 
 function CheckError(msg)

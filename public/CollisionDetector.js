@@ -129,6 +129,26 @@ CollisionDetector.prototype.intersectionsCircles = function(circle1, circle2) {
     ];
 };
 
+CollisionDetector.prototype.liesLeftOfLine = function(x, y, line) {
+    // Get a normal unit vector pointing to the left of the line
+    var nx = cos(line.angle + pi/2);
+    var ny = sin(line.angle + pi/2);
+
+    // Project the point in question onto that normal vector (dot product).
+    // A positive projection means the point is to the left of the line.
+    return x*nx + y*ny > 0;
+};
+
+CollisionDetector.prototype.liesLeftOfCircle = function(x, y, circle) {
+    // Get squared distance from circle's centre
+    var dx = circle.x - x;
+    var dy = circle.y - y;
+    var d2 = dx*dx + dy*dy;
+
+    // The point is inside the circle if d^2 is less than r^2
+    return d2 < circle.r*circle.r;
+};
+
 // Just use this global object for all collision detection.
 // Don't call it directly though... there are double-dispatch methods
 // on the primitives which take care of that.
