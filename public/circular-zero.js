@@ -37,9 +37,7 @@ var cursor = null;
 var activeLine = null;
 var activeCircle = null;
 
-var lines = [];
-var circles = [];
-var markers = [];
+var enemies = [];
 
 var mouseDown = false;
 var cursorMoving = false;
@@ -74,7 +72,7 @@ function init()
     messageBox = $('#message');
     debugBox = $('#debug');
 
-    gl = WebGLUtils.setupWebGL(canvas);
+    gl = WebGLUtils.setupWebGL(canvas, {stencil: true});
     if (!gl) {
         messageBox.html("WebGL is not available!");
     } else {
@@ -113,7 +111,11 @@ function init()
 
     gl.useProgram(null);
 
-    var innerLeafNode = new OpenLeaf([]);
+    enemies.push(new Enemy(0, 0.5, 0, 0, 0.025));
+    enemies.push(new Enemy(0.5*cos(-pi/6), 0.5*sin(-pi/6), 0, 0, 0.025));
+    enemies.push(new Enemy(0.5*cos(-5*pi/6), 0.5*sin(-pi/6), 0, 0, 0.025));
+
+    var innerLeafNode = new OpenLeaf(enemies.slice());
     var outerLeafNode = new ClosedLeaf();
     rootCircle = new InnerNode(null, new Circle(0, 0, 1, CircleType.Outside), innerLeafNode, outerLeafNode);
     cursor = new Circle(1, 0, 0.05, CircleType.Inside, 0, 2*pi, [0, 0.7, 0]);
@@ -216,9 +218,7 @@ function drawScreen()
     cursor.render();
     rootCircle.render();
 
-    //circles.forEach(function(c) { c.render(); });
-    //lines.forEach(function(l) { l.render(); });
-    markers.forEach(function(m) { m.render(); });
+    enemies.forEach(function(e) { e.render(); });
 
     if (activeCircle)
         activeCircle.render();
@@ -240,7 +240,6 @@ function moveCursor(dTime)
         if (activeLine.toDistance >= target)
         {
             activeLine.toDistance = target;
-            lines.push(activeLine);
             rootCircle.insert(activeLine);
             displayTree();
             cursorMoving = false;
@@ -261,7 +260,6 @@ function moveCursor(dTime)
         if (direction * activeCircle.toAngle >= direction * target)
         {
             activeCircle.toAngle = target;
-            circles.push(activeCircle);
             rootCircle.insert(activeCircle);
             displayTree();
             cursorMoving = false;

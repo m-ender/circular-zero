@@ -104,17 +104,32 @@ InnerNode.prototype.insertRChild = function(geometry) {
 };
 
 InnerNode.prototype.insertChild = function(geometry, propertyName) {
-    if (this[propertyName] instanceof ClosedLeaf)
+    var child = this[propertyName];
+    if (child instanceof ClosedLeaf)
         return;
-    else if (this[propertyName] instanceof OpenLeaf)
+    else if (child instanceof OpenLeaf)
     {
-        // TODO: Figure out if new leaves have to be open or closed
-        var newLeaf = new OpenLeaf([]);
-        var newNode = new InnerNode(this, geometry, this[propertyName], newLeaf);
+        var lEnemies = [];
+        var rEnemies = [];
+
+        // Sort enemies of child depending on which side of the new
+        // geometry they are on.
+        child.enemies.forEach(function(e) {
+            if (geometry.liesLeftOf(e.x, e.y))
+                lEnemies.push(e);
+            else
+                rEnemies.push(e);
+        });
+
+        // For an empty list, create a closed leaf. Otherwise, create
+        // an open leaf.
+        var lLeaf = lEnemies.length ? new OpenLeaf(lEnemies) : new ClosedLeaf();
+        var rLeaf = rEnemies.length ? new OpenLeaf(rEnemies) : new ClosedLeaf();
+        var newNode = new InnerNode(this, geometry, lLeaf, rLeaf);
         this[propertyName] = newNode;
     }
-    else if (this[propertyName] instanceof InnerNode)
-        this[propertyName].insert(geometry);
+    else if (child instanceof InnerNode)
+        child.insert(geometry);
 };
 
 // Represents a closed (filled) area. It will not be considered
@@ -151,7 +166,7 @@ function OpenLeaf(enemies, parent)
 
 OpenLeaf.prototype.toString = function(depth) {
     var indent = new Array(depth + 1).join('|');
-    return indent + 'Open\n';
+    return indent + 'Open; ' + this.enemies.length + ' enemies\n';
 };
 
 OpenLeaf.prototype.render = function() {
