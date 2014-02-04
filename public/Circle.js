@@ -73,14 +73,25 @@ function Circle(x, y, r, type, fromAngle, toAngle, color)
     this.fromAngle = fromAngle || 0;
     this.toAngle = (toAngle === undefined) ? 2*pi : toAngle;
 
-    this.type = type || CircleType.Circumference;
+    this.color = color || [colorFunction(), colorFunction(), colorFunction()];
+
+    // OpenGL data goes here
+    this.vertices = {};
+    this.colors = {};
+
+    type = type || CircleType.Circumference;
+
+    this.addType(type);
+}
+
+Circle.prototype.addType = function(type) {
+    if (this.vertices.hasOwnProperty(type))
+        return;
 
     // Initialize attribute buffers
     var coords;
-    var i;
-    var angle;
 
-    switch(this.type)
+    switch(type)
     {
     case CircleType.Inside:
         coords = insideCoords;
@@ -93,29 +104,29 @@ function Circle(x, y, r, type, fromAngle, toAngle, color)
         coords = circumferenceCoords;
     }
 
-    this.vertices = {};
-    this.vertices.data = new Float32Array(coords);
+    this.vertices[type] = {};
+    this.vertices[type].data = new Float32Array(coords);
 
-    this.vertices.bufferId = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertices.bufferId);
-    gl.bufferData(gl.ARRAY_BUFFER, this.vertices.data, gl.STATIC_DRAW);
+    this.vertices[type].bufferId = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertices[type].bufferId);
+    gl.bufferData(gl.ARRAY_BUFFER, this.vertices[type].data, gl.STATIC_DRAW);
 
     var components = [];
-    for (i = 0; i < coords.length / 2; ++i)
+    for (var i = 0; i < coords.length / 2; ++i)
     {
-        components.push(color ? color[0] : colorFunction());
-        components.push(color ? color[1] : colorFunction());
-        components.push(color ? color[2] : colorFunction());
+        components.push(this.color[0]);
+        components.push(this.color[1]);
+        components.push(this.color[2]);
         components.push(1.0);
     }
 
-    this.colors = {};
-    this.colors.data = new Float32Array(components);
+    this.colors[type] = {};
+    this.colors[type].data = new Float32Array(components);
 
-    this.colors.bufferId = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.colors.bufferId);
-    gl.bufferData(gl.ARRAY_BUFFER, this.colors.data, gl.STATIC_DRAW);
-}
+    this.colors[type].bufferId = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.colors[type].bufferId);
+    gl.bufferData(gl.ARRAY_BUFFER, this.colors[type].data, gl.STATIC_DRAW);
+};
 
 // Convenient setters
 Circle.prototype.move = function(x, y) {
@@ -130,7 +141,9 @@ Circle.prototype.resize = function(r) {
 Circle.prototype.hide = function() { this.hidden = true; };
 Circle.prototype.show = function() { this.hidden = false; };
 
-Circle.prototype.render = function() {
+// Before rendering with a type different from the one the object
+// was created with, you need to call addType().
+Circle.prototype.render = function(type) {
     if (this.hidden) return;
 
     gl.useProgram(circleProgram.program);
@@ -141,14 +154,14 @@ Circle.prototype.render = function() {
     gl.uniform1f(circleProgram.uToAngle, this.toAngle);
 
     gl.enableVertexAttribArray(circleProgram.aPos);
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertices.bufferId);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertices[type].bufferId);
     gl.vertexAttribPointer(circleProgram.aPos, 2, gl.FLOAT, false, 0, 0);
 
     gl.enableVertexAttribArray(circleProgram.aColor);
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.colors.bufferId);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.colors[type].bufferId);
     gl.vertexAttribPointer(circleProgram.aColor, 4, gl.FLOAT, false, 0, 0);
 
-    switch(this.type)
+    switch(type)
     {
     case CircleType.Inside:
         gl.drawArrays(gl.TRIANGLE_FAN, 0, 2 + segments);

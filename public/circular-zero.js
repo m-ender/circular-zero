@@ -117,7 +117,7 @@ function init()
 
     var innerLeafNode = new OpenLeaf(enemies.slice());
     var outerLeafNode = new ClosedLeaf();
-    rootCircle = new InnerNode(null, new Circle(0, 0, 1, CircleType.Outside), innerLeafNode, outerLeafNode);
+    rootCircle = new InnerNode(null, new Circle(0, 0, 1, CircleType.Circumference), innerLeafNode, outerLeafNode);
     cursor = new Circle(1, 0, 0.05, CircleType.Inside, 0, 2*pi, [0, 0.7, 0]);
 
     displayTree();
@@ -215,16 +215,16 @@ function drawScreen()
     gl.viewport(0, 0, viewPort.width, viewPort.height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    cursor.render();
+    cursor.render(CircleType.Inside);
     rootCircle.render();
 
     enemies.forEach(function(e) { e.render(); });
 
     if (activeCircle)
-        activeCircle.render();
+        activeCircle.render(CircleType.Circumference);
 
     if (activeLine)
-        activeLine.render();
+        activeLine.render(LineType.Line);
 
     gl.disable(gl.BLEND);
 }

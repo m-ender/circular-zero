@@ -23,7 +23,7 @@ Enemy.prototype.setAngle = function(angle) {
 };
 
 Enemy.prototype.render = function() {
-    this.geometry.render();
+    this.geometry.render(CircleType.Inside);
 };
 
 Enemy.prototype.update = function(dTime) {

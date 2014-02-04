@@ -21,6 +21,34 @@ function InnerNode(parent, geometry, lChild, rChild)
     this.lChild = lChild;
     this.rChild = rChild;
 
+    // Determine type of geometry
+    if (lChild instanceof OpenLeaf &&
+        rChild instanceof ClosedLeaf)
+    {
+        if (geometry instanceof Circle)
+            this.geometryType = CircleType.Outside;
+        else if (geometry instanceof Line)
+            this.geometryType = LineType.Right;
+    }
+    else if (lChild instanceof ClosedLeaf &&
+             rChild instanceof OpenLeaf)
+    {
+        if (geometry instanceof Circle)
+            this.geometryType = CircleType.Inside;
+        else if (geometry instanceof Line)
+            this.geometryType = LineType.Left;
+    }
+    else
+    {
+        // They can't both be closed, so they both have to be open
+        if (geometry instanceof Circle)
+            this.geometryType = CircleType.Circumference;
+        else if (geometry instanceof Line)
+            this.geometryType = LineType.Line;
+    }
+
+    this.geometry.addType(this.geometryType);
+
     // TODO: Compute these
     this.lChildArea = 0;
     this.rChildArea = 0;
@@ -31,8 +59,7 @@ function InnerNode(parent, geometry, lChild, rChild)
 InnerNode.prototype.render = function() {
     // Implement the stencil-based rendering traversal here
 
-    // The check is to avoid calling render() on leaf children
-    this.geometry.render();
+    this.geometry.render(this.geometryType);
 
     this.lChild.render();
     this.rChild.render();
@@ -56,14 +83,19 @@ InnerNode.prototype.toString = function(depth) {
 InnerNode.prototype.insert = function(geometry) {
     var points = geometry.intersectionsWith(this.geometry);
 
+    // The new geometry is identical to the existing one... ignore it
     if (points === true)
         return; // Nothing to do here...
 
+    // The new geometry intersects the existing one, add it to both
+    // leaves.
     if (points.length)
     {
         this.insertLChild(geometry);
         this.insertRChild(geometry);
     }
+    // The new geometry does not intersect the existing one, so we need
+    // to figure out on which side it is.
     else
     {
         // TODO: I think this needs to hide behind a double dispatch
@@ -121,8 +153,8 @@ InnerNode.prototype.insertChild = function(geometry, propertyName) {
                 rEnemies.push(e);
         });
 
-        // For an empty list, create a closed leaf. Otherwise, create
-        // an open leaf.
+        // For a non-empty list, create an open leaf. Otherwise, create
+        // a closed leaf.
         var lLeaf = lEnemies.length ? new OpenLeaf(lEnemies) : new ClosedLeaf();
         var rLeaf = rEnemies.length ? new OpenLeaf(rEnemies) : new ClosedLeaf();
         var newNode = new InnerNode(this, geometry, lLeaf, rLeaf);

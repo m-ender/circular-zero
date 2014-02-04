@@ -32,15 +32,32 @@ function Line(angle, type, toDistance, color)
 
     this.angle = angle;
 
-    this.type = type || LineType.Line;
-
     this.toDistance = (toDistance === undefined) ? 1 : toDistance;
+
+    this.color = color || [colorFunction(), colorFunction(), colorFunction()];
+
+    // OpenGL data goes here
+    this.vertices = {};
+    this.colors = {};
+
 
     // Initialize attribute buffers
     var coords;
     var i;
 
-    switch(this.type)
+    type = type || LineType.Line;
+
+    this.addType(type);
+}
+
+Line.prototype.addType = function(type) {
+    if (this.vertices.hasOwnProperty(type))
+        return;
+
+    // Initialize attribute buffers
+    var coords;
+
+    switch(type)
     {
     case LineType.Left:
         coords = leftCoords;
@@ -53,55 +70,57 @@ function Line(angle, type, toDistance, color)
         coords = lineCoords;
     }
 
-    this.vertices = {};
-    this.vertices.data = new Float32Array(coords);
+    this.vertices[type] = {};
+    this.vertices[type].data = new Float32Array(coords);
 
-    this.vertices.bufferId = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertices.bufferId);
-    gl.bufferData(gl.ARRAY_BUFFER, this.vertices.data, gl.STATIC_DRAW);
+    this.vertices[type].bufferId = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertices[type].bufferId);
+    gl.bufferData(gl.ARRAY_BUFFER, this.vertices[type].data, gl.STATIC_DRAW);
 
     var components = [];
-    for (i = 0; i < coords.length / 2; ++i)
+    for (var i = 0; i < coords.length / 2; ++i)
     {
-        components.push(color ? color[0] : 0);
-        components.push(color ? color[1] : 0);
-        components.push(color ? color[2] : 0);
-        components.push(1);
+        components.push(this.color[0]);
+        components.push(this.color[1]);
+        components.push(this.color[2]);
+        components.push(1.0);
     }
 
-    this.colors = {};
-    this.colors.data = new Float32Array(components);
+    this.colors[type] = {};
+    this.colors[type].data = new Float32Array(components);
 
-    this.colors.bufferId = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.colors.bufferId);
-    gl.bufferData(gl.ARRAY_BUFFER, this.colors.data, gl.STATIC_DRAW);
-}
+    this.colors[type].bufferId = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.colors[type].bufferId);
+    gl.bufferData(gl.ARRAY_BUFFER, this.colors[type].data, gl.STATIC_DRAW);
+};
 
 Line.prototype.hide = function() { this.hidden = true; };
 Line.prototype.show = function() { this.hidden = false; };
 
-Line.prototype.render = function()
-{
+
+// Before rendering with a type different from the one the object
+// was created with, you need to call addType().
+Line.prototype.render = function(type) {
     if (this.hidden) return;
 
     gl.useProgram(lineProgram.program);
 
     gl.uniform1f(lineProgram.uAngle, this.angle);
 
-    if (this.type === LineType.Line)
+    if (type === LineType.Line)
         gl.uniform1f(lineProgram.uToDistance, this.toDistance);
     else
         gl.uniform1f(lineProgram.uToDistance, 10);
 
     gl.enableVertexAttribArray(lineProgram.aPos);
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertices.bufferId);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertices[type].bufferId);
     gl.vertexAttribPointer(lineProgram.aPos, 2, gl.FLOAT, false, 0, 0);
 
     gl.enableVertexAttribArray(lineProgram.aColor);
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.colors.bufferId);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.colors[type].bufferId);
     gl.vertexAttribPointer(lineProgram.aColor, 4, gl.FLOAT, false, 0, 0);
 
-    switch(this.type)
+    switch(type)
     {
     case LineType.Left:
         gl.drawArrays(gl.TRIANGLES, 0, 3);
