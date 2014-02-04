@@ -85,6 +85,7 @@ function Circle(x, y, r, type, fromAngle, toAngle, color)
 }
 
 Circle.prototype.addType = function(type) {
+    // Don't add a type twice
     if (this.vertices.hasOwnProperty(type))
         return;
 

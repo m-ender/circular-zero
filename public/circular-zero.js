@@ -3,6 +3,9 @@ var messageBox;
 var debugBox;
 
 var gl;
+var stencilBuffer;
+
+var colorGenerator;
 
 // Objects holding data for individual shader programs
 var circleProgram = {};
@@ -79,6 +82,8 @@ function init()
         messageBox.html("WebGL up and running!");
     }
 
+    stencilBuffer = new StencilBuffer(gl);
+
     gl.clearColor(1, 1, 1, 1);
 
     // Load shaders and get uniform locations
@@ -119,6 +124,8 @@ function init()
     var outerLeafNode = new ClosedLeaf();
     rootCircle = new InnerNode(null, new Circle(0, 0, 1, CircleType.Circumference), innerLeafNode, outerLeafNode);
     cursor = new Circle(1, 0, 0.05, CircleType.Inside, 0, 2*pi, [0, 0.7, 0]);
+
+    colorGenerator = new ColorGenerator();
 
     displayTree();
 
@@ -215,9 +222,11 @@ function drawScreen()
     gl.viewport(0, 0, viewPort.width, viewPort.height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    cursor.render(CircleType.Inside);
+    stencilBuffer.enable();
     rootCircle.render();
+    stencilBuffer.disable();
 
+    cursor.render(CircleType.Inside);
     enemies.forEach(function(e) { e.render(); });
 
     if (activeCircle)
@@ -327,13 +336,16 @@ function handleMouseDown(event) {
     debugBox.find('#xdown').html(coords.x);
     debugBox.find('#ydown').html(coords.y);
 
+    var newColor = colorGenerator.nextColor(true);
+    newColor =  [newColor.red()/255, newColor.green()/255, newColor.blue()/255];
+
     mouseDown = true;
-    activeLine = new Line(atan2(-cursor.y, -cursor.x));
+    activeLine = new Line(atan2(-cursor.y, -cursor.x), LineType.Line, 1, newColor);
 
     // This position is arbitrary. When the user clicks, the
     // line will always be shown and the circles parameters
     // will be recalculated as soon as the mouse is moved.
-    activeCircle = new Circle(cursor.x, cursor.y, 0.2);
+    activeCircle = new Circle(cursor.x, cursor.y, 0.2, CircleType.Circumference, 0, 2*pi, newColor);
     activeCircle.hide();
 }
 

@@ -41,10 +41,20 @@ function InnerNode(parent, geometry, lChild, rChild)
     else
     {
         // They can't both be closed, so they both have to be open
+        // Add the other types as well - we'll need them for the stencil
+        // buffer.
         if (geometry instanceof Circle)
+        {
             this.geometryType = CircleType.Circumference;
+            geometry.addType(CircleType.Inside);
+            geometry.addType(CircleType.Outside);
+        }
         else if (geometry instanceof Line)
+        {
             this.geometryType = LineType.Line;
+            geometry.addType(LineType.Left);
+            geometry.addType(LineType.Right);
+        }
     }
 
     this.geometry.addType(this.geometryType);
@@ -57,12 +67,77 @@ function InnerNode(parent, geometry, lChild, rChild)
 }
 
 InnerNode.prototype.render = function() {
-    // Implement the stencil-based rendering traversal here
+    if (this.geometryType === CircleType.Circumference)
+    {
+        // Draw the geometry itself
+        stencilBuffer.renderToColorBuffer();
+        this.geometry.render(this.geometryType);
 
-    this.geometry.render(this.geometryType);
+        // Mask out the outside, then draw the inside
+        stencilBuffer.incrementOnRender();
+        this.geometry.render(CircleType.Outside);
 
-    this.lChild.render();
-    this.rChild.render();
+        this.lChild.render();
+
+        // Undo changes to the stencil buffer
+        stencilBuffer.decrementOnRender();
+        this.geometry.render(CircleType.Outside);
+
+        // Mask out the inside, then draw the outside
+        stencilBuffer.incrementOnRender();
+        this.geometry.render(CircleType.Inside);
+
+        this.rChild.render();
+
+        // Undo changes to the stencil buffer
+        stencilBuffer.decrementOnRender();
+        this.geometry.render(CircleType.Inside);
+    }
+    else if (this.geometryType === LineType.Line)
+    {
+        // Draw the geometry itself
+        stencilBuffer.renderToColorBuffer();
+        this.geometry.render(this.geometryType);
+
+        // Mask out the right-hand side, then draw the left-hand side
+        stencilBuffer.incrementOnRender();
+        this.geometry.render(LineType.Right);
+
+        this.lChild.render();
+
+        // Undo changes to the stencil buffer
+        stencilBuffer.decrementOnRender();
+        this.geometry.render(LineType.Right);
+
+        // Mask out the left-hand side, then draw the right-hand side
+        stencilBuffer.incrementOnRender();
+        this.geometry.render(LineType.Left);
+
+        this.rChild.render();
+
+        // Undo changes to the stencil buffer
+        stencilBuffer.decrementOnRender();
+        this.geometry.render(LineType.Left);
+    }
+    else
+    {
+        // Draw the geometry itself
+        stencilBuffer.renderToColorBuffer();
+        this.geometry.render(this.geometryType);
+
+        // Mask out the closed child, then draw the open child
+        stencilBuffer.incrementOnRender();
+        this.geometry.render(this.geometryType);
+
+        // One of these will be a closed leaf, so only the other
+        // one will actually draw more geometry.
+        this.lChild.render();
+        this.rChild.render();
+
+        // Undo changes to the stencil buffer
+        stencilBuffer.decrementOnRender();
+        this.geometry.render(this.geometryType);
+    }
 };
 
 InnerNode.prototype.toString = function(depth) {

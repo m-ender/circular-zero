@@ -51,6 +51,7 @@ function Line(angle, type, toDistance, color)
 }
 
 Line.prototype.addType = function(type) {
+    // Don't add a type twice
     if (this.vertices.hasOwnProperty(type))
         return;
 
