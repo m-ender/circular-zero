@@ -3,6 +3,7 @@
 // root node.
 // geometry is either a Circle or a Line, which represents
 // the hyperplane that splits the 2d space.
+// area is the total area occupied by this nodes children.
 // The two children can be passed in as lChild and rChild.
 // For a Line, the definition of "left" and "right" is relative
 // to the direction the line points in (defined by its angle).
@@ -10,7 +11,7 @@
 // "right" to its outside. This is analogous to the line if you
 // view the circle's circumference as a line that is traversed
 // in a counter-clockwise sense.
-function InnerNode(parent, geometry, lChild, rChild)
+function InnerNode(parent, geometry, area, lChild, rChild)
 {
     this.parent = parent;
     this.geometry = geometry;
@@ -59,9 +60,10 @@ function InnerNode(parent, geometry, lChild, rChild)
 
     this.geometry.addType(this.geometryType);
 
-    // TODO: Compute these
-    this.lChildArea = 0;
-    this.rChildArea = 0;
+    // For Monte-Carlo-based area computation
+    this.area = area;
+    this.lChildSamples = 0;
+    this.rChildSamples = 0;
 
     return this;
 }
@@ -146,13 +148,13 @@ InnerNode.prototype.toString = function(depth) {
     var type;
 
     if (this.geometry instanceof Circle)
-        type = 'Circle node\n';
+        type = 'Circle node';
     else if (this.geometry instanceof Line)
-        type = 'Line node\n';
+        type = 'Line node';
     else
-        type = 'some node...\n';
+        type = 'some node...';
 
-    return indent + type + this.lChild.toString(depth+1) + this.rChild.toString(depth+1);
+    return indent + type + '; A: ' + this.area.toFixed(2) + '\n' + this.lChild.toString(depth+1) + this.rChild.toString(depth+1);
 };
 
 InnerNode.prototype.insert = function(geometry) {
@@ -232,11 +234,34 @@ InnerNode.prototype.insertChild = function(geometry, propertyName) {
         // a closed leaf.
         var lLeaf = lEnemies.length ? new OpenLeaf(lEnemies) : new ClosedLeaf();
         var rLeaf = rEnemies.length ? new OpenLeaf(rEnemies) : new ClosedLeaf();
-        var newNode = new InnerNode(this, geometry, lLeaf, rLeaf);
+        var newNode = new InnerNode(this, geometry, child.area, lLeaf, rLeaf);
         this[propertyName] = newNode;
     }
     else if (child instanceof InnerNode)
         child.insert(geometry);
+};
+
+InnerNode.prototype.registerSample = function(x, y) {
+    if (this.geometry.liesLeftOf(x,y))
+    {
+        ++this.lChildSamples;
+        this.lChild.registerSample(x,y);
+    }
+    else
+    {
+        ++this.rChildSamples;
+        this.rChild.registerSample(x,y);
+    }
+};
+
+InnerNode.prototype.recalculateAreas = function() {
+    var lFraction = this.lChildSamples / (this.lChildSamples + this.rChildSamples);
+
+    this.lChild.area = this.area * lFraction;
+    this.rChild.area = this.area * (1 - lFraction);
+
+    return this.lChild.recalculateAreas() +
+           this.rChild.recalculateAreas();
 };
 
 // Represents a closed (filled) area. It will not be considered
@@ -253,11 +278,19 @@ function ClosedLeaf(parent)
 
 ClosedLeaf.prototype.toString = function(depth) {
     var indent = new Array(depth + 1).join('|');
-    return indent + 'Closed\n';
+    return indent + 'Closed; A: ' + this.area.toFixed(2) + '\n';
 };
 
 ClosedLeaf.prototype.render = function() {
     return; // Nothing to do here...
+};
+
+ClosedLeaf.prototype.registerSample = function(x, y) {
+    return; // Nothing to do here...
+};
+
+ClosedLeaf.prototype.recalculateAreas = function(x, y) {
+    return this.area;
 };
 
 // Represents an open (unfilled) area, which still contains
@@ -269,13 +302,23 @@ function OpenLeaf(enemies, parent)
 {
     this.enemies = enemies;
     this.parent = parent || null;
+
+    this.area = 0;
 }
 
 OpenLeaf.prototype.toString = function(depth) {
     var indent = new Array(depth + 1).join('|');
-    return indent + 'Open; ' + this.enemies.length + ' enemies\n';
+    return indent + 'Open;   A: '+ this.area.toFixed(2) + '; N(e): ' + this.enemies.length + '\n';
 };
 
 OpenLeaf.prototype.render = function() {
     return; // Nothing to do here...
-}
+};
+
+OpenLeaf.prototype.registerSample = function(x, y) {
+    return; // Nothing to do here...
+};
+
+OpenLeaf.prototype.recalculateAreas = function(x, y) {
+    return 0; // Does not contribute to closed off areas
+};

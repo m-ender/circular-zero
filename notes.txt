@@ -1,0 +1,3 @@
+Performance test for Monte-Carlo sample generation:
+    http://jsperf.com/random-points-in-circle
+

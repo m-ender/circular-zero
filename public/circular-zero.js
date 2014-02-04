@@ -116,13 +116,15 @@ function init()
 
     gl.useProgram(null);
 
-    enemies.push(new Enemy(0, 0.5, 0, 0, 0.025));
+    //enemies.push(new Enemy(0, 0.5, 0, 0, 0.025));
     enemies.push(new Enemy(0.5*cos(-pi/6), 0.5*sin(-pi/6), 0, 0, 0.025));
     enemies.push(new Enemy(0.5*cos(-5*pi/6), 0.5*sin(-pi/6), 0, 0, 0.025));
 
     var innerLeafNode = new OpenLeaf(enemies.slice());
     var outerLeafNode = new ClosedLeaf();
-    rootCircle = new InnerNode(null, new Circle(0, 0, 1, CircleType.Circumference), innerLeafNode, outerLeafNode);
+    innerLeafNode.area = 1; // we are only interested in the relative area
+    outerLeafNode.area = 0; // don't count what's outside the main game arena
+    rootCircle = new InnerNode(null, new Circle(0, 0, 1, CircleType.Circumference), 1, innerLeafNode, outerLeafNode);
     cursor = new Circle(1, 0, 0.05, CircleType.Inside, 0, 2*pi, [0, 0.7, 0]);
 
     colorGenerator = new ColorGenerator();
@@ -442,6 +444,23 @@ function snapToLine(x, y) {
 
     // Snap if we're less than 5 degrees away the line
     return abs(pointedAngle - activeLine.angle) < 2 * pi / 180;
+}
+
+// n is the number of samples to generate
+function runMonteCarlo(n) {
+    for (var i = 0; i < n; ++i)
+    {
+        // Generate points uniformly in coordinate range [-1,1]
+        var x = Math.random()*2-1;
+        var y = Math.random()*2-1;
+        // Ignore points that are not inside the unit circle
+        if (x*x + y*y <= 1)
+            rootCircle.registerSample(x, y);
+    }
+
+    var area = rootCircle.recalculateAreas();
+    debugBox.find('#area').html((area*100).toFixed(2));
+    displayTree();
 }
 
 function displayTree()
