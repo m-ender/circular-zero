@@ -40,6 +40,10 @@ var cursor = null;
 var activeLine = null;
 var activeCircle = null;
 
+var hiddenPrimitive = null;
+
+var totalArea = 0;
+
 var enemies = [];
 
 var mouseDown = false;
@@ -116,7 +120,7 @@ function init()
 
     gl.useProgram(null);
 
-    //enemies.push(new Enemy(0, 0.5, 0, 0, 0.025));
+    enemies.push(new Enemy(0, 0.5, 0, 0, 0.025));
     enemies.push(new Enemy(0.5*cos(-pi/6), 0.5*sin(-pi/6), 0, 0, 0.025));
     enemies.push(new Enemy(0.5*cos(-5*pi/6), 0.5*sin(-pi/6), 0, 0, 0.025));
 
@@ -211,7 +215,10 @@ function update()
         lastTime = currentTime - (dTime % interval);
 
         if (cursorMoving)
+        {
+            runMonteCarlo(100);
             moveCursor(dTime);
+        }
 
         drawScreen();
     }
@@ -250,18 +257,13 @@ function moveCursor(dTime)
 
         if (activeLine.toDistance >= target)
         {
-            activeLine.toDistance = target;
-            rootCircle.insert(activeLine);
-            displayTree();
+            activeLine.hide();
             cursorMoving = false;
         }
 
         endPoint = activeLine.getEndPoint();
         cursor.x = endPoint.x;
         cursor.y = endPoint.y;
-
-        if (!cursorMoving)
-            activeLine = null;
     }
     else if (activeCircle)
     {
@@ -270,18 +272,24 @@ function moveCursor(dTime)
 
         if (direction * activeCircle.toAngle >= direction * target)
         {
-            activeCircle.toAngle = target;
-            rootCircle.insert(activeCircle);
-            displayTree();
+            activeCircle.hide();
             cursorMoving = false;
         }
 
         endPoint = activeCircle.getEndPoint();
         cursor.x = endPoint.x;
         cursor.y = endPoint.y;
+    }
 
-        if (!cursorMoving)
-            activeCircle = null;
+    if (!cursorMoving)
+    {
+        activeCircle = null;
+        activeLine = null;
+
+        hiddenPrimitive.show();
+        hiddenPrimitive = null;
+
+        recalculateArea();
     }
 }
 
@@ -396,17 +404,42 @@ function handleMouseUp(event) {
         direction = sign(target - activeCircle.fromAngle);
 
         activeCircle.toAngle = activeCircle.fromAngle;
-        cursorMoving = true;
 
+        var newCircle = new Circle(
+            activeCircle.x,
+            activeCircle.y,
+            activeCircle.r,
+            activeCircle.type,
+            activeCircle.fromAngle,
+            target,
+            activeCircle.color
+        );
+
+        newCircle.hide();
+
+        rootCircle.insert(newCircle);
+        hiddenPrimitive = newCircle;
     }
     else
     {
         activeCircle = null;
         activeLine.toDistance = -1;
         target = 1;
-        cursorMoving = true;
+
+        var newLine = new Line(
+            activeLine.angle,
+            activeLine.type,
+            target,
+            activeLine.color
+        );
+
+        newLine.hide();
+
+        rootCircle.insert(newLine);
+        hiddenPrimitive = newLine;
     }
 
+    cursorMoving = true;
 }
 
 // Takes the mouse event and the rectangle to normalise for
@@ -457,9 +490,16 @@ function runMonteCarlo(n) {
         if (x*x + y*y <= 1)
             rootCircle.registerSample(x, y);
     }
+}
 
-    var area = rootCircle.recalculateAreas();
-    debugBox.find('#area').html((area*100).toFixed(2));
+function recalculateArea()
+{
+    var newArea = rootCircle.recalculateAreas();
+    if (newArea - totalArea > 0.01)
+    {
+        totalArea = newArea;
+        debugBox.find('#area').html((totalArea*100).toFixed());
+    }
     displayTree();
 }
 
