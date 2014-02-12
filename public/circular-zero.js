@@ -257,7 +257,7 @@ function moveCursor(dTime)
 
         if (activeLine.toDistance >= target)
         {
-            activeLine.hide();
+            activeLine.destroy();
             cursorMoving = false;
         }
 
@@ -272,7 +272,7 @@ function moveCursor(dTime)
 
         if (direction * activeCircle.toAngle >= direction * target)
         {
-            activeCircle.hide();
+            activeCircle.destroy();
             cursorMoving = false;
         }
 
@@ -283,8 +283,8 @@ function moveCursor(dTime)
 
     if (!cursorMoving)
     {
-        activeCircle = null;
         activeLine = null;
+        activeCircle = null;
 
         hiddenPrimitive.show();
         hiddenPrimitive = null;
@@ -373,6 +373,7 @@ function handleMouseUp(event) {
 
     if (!activeCircle.hidden)
     {
+        activeLine.destroy();
         activeLine = null;
         var points = activeCircle.intersectionsWith(rootCircle.geometry);
 
@@ -422,6 +423,7 @@ function handleMouseUp(event) {
     }
     else
     {
+        activeCircle.destroy();
         activeCircle = null;
         activeLine.toDistance = -1;
         target = 1;

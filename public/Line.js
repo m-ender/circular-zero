@@ -95,6 +95,26 @@ Line.prototype.addType = function(type) {
     gl.bufferData(gl.ARRAY_BUFFER, this.colors[type].data, gl.STATIC_DRAW);
 };
 
+// "Destructor" - this has to be called manually
+Line.prototype.destroy = function() {
+    var type;
+    for (type in this.vertices)
+    {
+        if (!this.vertices.hasOwnProperty(type))
+            continue;
+
+        gl.deleteBuffer(this.vertices[type].bufferId);
+    }
+
+    for (type in this.colors)
+    {
+        if (!this.colors.hasOwnProperty(type))
+            continue;
+
+        gl.deleteBuffer(this.colors[type].bufferId);
+    }
+};
+
 Line.prototype.hide = function() { this.hidden = true; };
 Line.prototype.show = function() { this.hidden = false; };
 
