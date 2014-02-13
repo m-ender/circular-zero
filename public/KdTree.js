@@ -1,3 +1,7 @@
+// We keep a global list of open leaves to traverse these
+// quickly for enemy collisions.
+var openLeaves = [];
+
 // Represents an inner node of the tree.
 // parent the preceding InnerNode in the tree or null for the
 // root node.
@@ -235,6 +239,9 @@ InnerNode.prototype.insertChild = function(geometry, propertyName) {
         var lLeaf = lEnemies.length ? new OpenLeaf(lEnemies) : new ClosedLeaf();
         var rLeaf = rEnemies.length ? new OpenLeaf(rEnemies) : new ClosedLeaf();
         var newNode = new InnerNode(this, geometry, child.area, lLeaf, rLeaf);
+
+        child.destroy();
+
         this[propertyName] = newNode;
     }
     else if (child instanceof InnerNode)
@@ -304,7 +311,15 @@ function OpenLeaf(enemies, parent)
     this.parent = parent || null;
 
     this.area = 0;
+
+    openLeaves.push(this);
 }
+
+OpenLeaf.prototype.destroy = function() {
+    this.enemies = null;
+    var index = openLeaves.indexOf(this);
+    openLeaves.splice(index, 1);
+};
 
 OpenLeaf.prototype.toString = function(depth) {
     var indent = new Array(depth + 1).join('|');

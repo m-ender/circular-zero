@@ -54,6 +54,9 @@ var direction = null; // Only necessary for motion around activeCircle
 // Gameplay configuration
 var cursorSpeed = 1; // given in length units per second
 
+var enemyRadius = 0.025;
+var enemySpeed = 0.5; // given in length units per second
+
 window.onload = init;
 
 function init()
@@ -120,9 +123,9 @@ function init()
 
     gl.useProgram(null);
 
-    enemies.push(new Enemy(0, 0.5, 0, 0, 0.025));
-    enemies.push(new Enemy(0.5*cos(-pi/6), 0.5*sin(-pi/6), 0, 0, 0.025));
-    enemies.push(new Enemy(0.5*cos(-5*pi/6), 0.5*sin(-pi/6), 0, 0, 0.025));
+    enemies.push(new Enemy(0, 0.5, enemySpeed, pi, enemyRadius));
+    enemies.push(new Enemy(0.5*cos(-pi/6), 0.5*sin(-pi/6), enemySpeed, pi/3, enemyRadius));
+    enemies.push(new Enemy(0.5*cos(-5*pi/6), 0.5*sin(-pi/6), enemySpeed, -pi/3, enemyRadius));
 
     var innerLeafNode = new OpenLeaf(enemies.slice());
     var outerLeafNode = new ClosedLeaf();
@@ -211,7 +214,7 @@ function update()
         // Uncomment to see dropped frames
         //frames (dTime > 2*interval) console.log("UpsX" + Math.floor(dTime/interval));
 
-        // This drops a frame if dTime is greater than two intervals
+        // The modulo is to take care of the case that we skipped a frame
         lastTime = currentTime - (dTime % interval);
 
         if (cursorMoving)
@@ -219,6 +222,8 @@ function update()
             runMonteCarlo(100);
             moveCursor(dTime);
         }
+
+        moveEnemies(dTime);
 
         drawScreen();
     }
@@ -291,6 +296,31 @@ function moveCursor(dTime)
 
         recalculateArea();
     }
+}
+
+function moveEnemies(dTime) {
+    openLeaves.forEach(function(o) {
+        var i, e;
+        for (i = 0; i < o.enemies.length; ++i)
+        {
+            e = o.enemies[i];
+            e.x += e.vx * dTime / 1000;
+            e.y += e.vy * dTime / 1000;
+
+            e.geometry.x = e.x;
+            e.geometry.y = e.y;
+
+            if (e.geometry.collidesWith(o.parent.geometry))
+            {
+                var d = e.x*e.x + e.y*e.y;
+                var p = e.vx * e.x + e.vy * e.y;
+                var rx = - e.x * p/d;
+                var ry = - e.y * p/d;
+                e.vx += 2*rx;
+                e.vy += 2*ry;
+            }
+        }
+    });
 }
 
 function handleMouseMove(event) {
