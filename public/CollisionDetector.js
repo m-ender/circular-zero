@@ -49,7 +49,7 @@ CollisionDetector.prototype.intersectionsLineCircle = function(line, circle) {
 
     // Project centre of the circle onto a vector perpendicular to the line.
     // This will be the perpendicular distance from the line.
-    var d = abs(x * circle.y - y * circle.x);
+    var d = x * circle.y - y * circle.x;
 
     // Use Pythagoras to get the distance along the line to the two intersections.
     var dmu = sqrt(circle.r * circle.r - d * d);

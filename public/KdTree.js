@@ -350,7 +350,7 @@ OpenLeaf.prototype.subdivide = function() {
     // a closed leaf.
     var lLeaf = lEnemies.length ? new OpenLeaf(lEnemies) : new ClosedLeaf();
     var rLeaf = rEnemies.length ? new OpenLeaf(rEnemies) : new ClosedLeaf();
-    var newNode = new InnerNode(this, this.geometry, this.area, lLeaf, rLeaf);
+    var newNode = new InnerNode(this.parent, this.geometry, this.area, lLeaf, rLeaf);
 
     newNode.lChildSamples = this.lChildSamples;
     newNode.rChildSamples = this.rChildSamples;

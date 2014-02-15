@@ -302,33 +302,109 @@ function moveCursor(dTime)
 }
 
 function moveEnemies(dTime) {
-    var steps = 1;
-    var o, e;
-
-    for (var i = 0; i < steps; ++i)
+    for (var j = 0; j < openLeaves.length; ++j)
     {
-        for (var j = 0; j < openLeaves.length; ++j)
+        var o = openLeaves[j];
+        for (var k = 0; k < o.enemies.length; ++k)
         {
-            o = openLeaves[j];
-            for (var k = 0; k < o.enemies.length; ++k)
+            var e = o.enemies[k];
+
+            var dvleft = e.v * dTime / 1000;
+            while (dvleft > 1e-6)
             {
-                e = o.enemies[k];
-                e.x += e.vx * dTime / (1000 * steps);
-                e.y += e.vy * dTime / (1000 * steps);
+                var lastChild = o;
+                var nearestN = null;
+                var nearestD2 = dvleft*dvleft;
+                var nearestR = null;
+                var nearestSign = null;
 
-                e.geometry.x = e.x;
-                e.geometry.y = e.y;
-
-                if (e.geometry.collidesWith(o.parent.geometry))
+                var currentNode;
+                while ((currentNode = lastChild.parent) !== null)
                 {
-                    var d = e.x*e.x + e.y*e.y;
-                    var p = e.vx * e.x + e.vy * e.y;
-                    var rx = - e.x * p/d;
-                    var ry = - e.y * p/d;
-                    e.vx += 2*rx;
-                    e.vy += 2*ry;
+                    // Compute the distance from the centre of the circle
+                    var dx = currentNode.geometry.x - e.x;
+                    var dy = currentNode.geometry.y - e.y;
+                    var dc = sqrt(dx*dx + dy*dy);
+
+                    // Several of the following calculations change their sign
+                    // depending on if we're inside or outside of the circle
+                    var sign;
+                    if (lastChild === currentNode.lChild)
+                        sign = -1;
+                    else
+                        sign = 1;
+
+                    // We now transform the collision problem into an equivalent
+                    // one where the enemy is just a point and we add its radius
+                    // to that of the wall.
+                    var r = currentNode.geometry.r + sign * e.geometry.r;
+                    var d = sign * (dc - r);
+
+                    if (d < dvleft)
+                    {
+                        // The line (e.x,e.y) + mu (e.vy,e.vy) is the line along which the
+                        // enemy moves (with the direction being normalised).
+
+                        // Project the centre of the circle onto that vector (dot product).
+                        // Going this distance along the line will lead to the point halfway
+                        // between the intersections.
+                        var mu = e.vx * dx + e.vy * dy;
+
+                        // Project centre of the circle onto a vector perpendicular to the line.
+                        // This will be the perpendicular distance from the line.
+                        d = e.vx * dy - e.vy * dx;
+
+                        // Use Pythagoras to get the distance along the line to the two intersections.
+                        var dmu = sqrt(r * r - d * d);
+
+                        // Determine vector from enemy to collision coordinates and it's squared length
+                        var cx = e.vx * (mu - sign * dmu);
+                        var cy = e.vy * (mu - sign * dmu);
+                        var c2 = cx * cx + cy * cy;
+                        if (c2 < nearestD2)
+                        {
+                            nearestD2 = c2;
+                            nearestR = r;
+                            nearestN = currentNode;
+                            nearestSign = sign;
+                        }
+                    }
+
+                    lastChild = currentNode;
                 }
+
+                var dv = sqrt(nearestD2);
+                e.x += e.vx * dv;
+                e.y += e.vy * dv;
+
+                if (nearestN)
+                {
+                    // Find vector from geometry centre to collision point
+                    var px = nearestSign*(nearestN.geometry.x - e.x);
+                    var py = nearestSign*(nearestN.geometry.y - e.y);
+
+                    var dAngle = atan2(py, px) - e.angle;
+
+                    e.setAngle(e.angle + 2*dAngle + pi);
+
+                    /*
+                    // Project velocity onto that vector
+                    var p = e.vx * px + e.vy * py;
+
+                    // Reflection vector is opposite to twice that projection along
+                    // the vector. Also do normalisation now.
+                    var rx = px * p/nearestR;
+                    var ry = py * p/nearestR;
+                    e.vx -= 2*rx;
+                    e.vy -= 2*ry;
+                    */
+                }
+
+                dvleft -= dv;
             }
+
+            e.geometry.x = e.x;
+            e.geometry.y = e.y;
         }
     }
 }

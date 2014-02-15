@@ -17,9 +17,9 @@ function Enemy(x, y, v, angle, r)
 Enemy.prototype.setAngle = function(angle) {
     this.angle = angle;
 
-    // Precompute current velocity vector
-    this.vx = this.v*cos(angle);
-    this.vy = this.v*sin(angle);
+    // Precompute current normal vector parallel to velocity
+    this.vx = cos(angle);
+    this.vy = sin(angle);
 };
 
 Enemy.prototype.render = function() {
