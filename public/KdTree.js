@@ -161,6 +161,7 @@ InnerNode.prototype.toString = function(depth) {
     return indent + type + '; A: ' + this.area.toFixed(2) + '\n' + this.lChild.toString(depth+1) + this.rChild.toString(depth+1);
 };
 
+// Returns a list of OpenLeaves that geometry has been inserted into.
 InnerNode.prototype.insert = function(geometry) {
     var points = geometry.intersectionsWith(this.geometry);
 
@@ -172,8 +173,8 @@ InnerNode.prototype.insert = function(geometry) {
     // leaves.
     if (points.length)
     {
-        this.insertLChild(geometry);
-        this.insertRChild(geometry);
+        var affectedLeaves = this.insertLChild(geometry);
+        return affectedLeaves.concat(this.insertRChild(geometry));
     }
     // The new geometry does not intersect the existing one, so we need
     // to figure out on which side it is.
@@ -185,16 +186,16 @@ InnerNode.prototype.insert = function(geometry) {
             if (this.geometry instanceof Circle)
             {
                 if (geometry.r < this.geometry.r && this.geometry.liesLeftOf(geometry.x, geometry.y))
-                    this.insertLChild(geometry);
+                    return this.insertLChild(geometry);
                 else
-                    this.insertRChild(geometry);
+                    return this.insertRChild(geometry);
             }
             else if (this.geometry instanceof Line)
             {
                 if (this.geometry.liesLeftOf(geometry.x, geometry.y))
-                    this.insertLChild(geometry);
+                    return this.insertLChild(geometry);
                 else
-                    this.insertRChild(geometry);
+                    return this.insertRChild(geometry);
             }
         }
         else if (geometry instanceof Line)
@@ -204,48 +205,29 @@ InnerNode.prototype.insert = function(geometry) {
             // If this.geometry is a circle, and there has been
             // no intersection, the line has to lie outside the
             // circle.
-            this.insertRChild(geometry);
+            return this.insertRChild(geometry);
     }
 };
 
 InnerNode.prototype.insertLChild = function(geometry) {
-    this.insertChild(geometry, 'lChild');
+    return this.insertChild(geometry, 'lChild');
 };
 
 InnerNode.prototype.insertRChild = function(geometry) {
-    this.insertChild(geometry, 'rChild');
+    return this.insertChild(geometry, 'rChild');
 };
 
 InnerNode.prototype.insertChild = function(geometry, propertyName) {
     var child = this[propertyName];
     if (child instanceof ClosedLeaf)
-        return;
+        return [];
     else if (child instanceof OpenLeaf)
     {
-        var lEnemies = [];
-        var rEnemies = [];
-
-        // Sort enemies of child depending on which side of the new
-        // geometry they are on.
-        child.enemies.forEach(function(e) {
-            if (geometry.liesLeftOf(e.x, e.y))
-                lEnemies.push(e);
-            else
-                rEnemies.push(e);
-        });
-
-        // For a non-empty list, create an open leaf. Otherwise, create
-        // a closed leaf.
-        var lLeaf = lEnemies.length ? new OpenLeaf(lEnemies) : new ClosedLeaf();
-        var rLeaf = rEnemies.length ? new OpenLeaf(rEnemies) : new ClosedLeaf();
-        var newNode = new InnerNode(this, geometry, child.area, lLeaf, rLeaf);
-
-        child.destroy();
-
-        this[propertyName] = newNode;
+        child.geometry = geometry;
+        return [child];
     }
     else if (child instanceof InnerNode)
-        child.insert(geometry);
+        return child.insert(geometry);
 };
 
 InnerNode.prototype.registerSample = function(x, y) {
@@ -312,6 +294,9 @@ function OpenLeaf(enemies, parent)
 
     this.area = 0;
 
+    this.lChildSamples = 0;
+    this.rChildSamples = 0;
+
     openLeaves.push(this);
 }
 
@@ -331,9 +316,49 @@ OpenLeaf.prototype.render = function() {
 };
 
 OpenLeaf.prototype.registerSample = function(x, y) {
-    return; // Nothing to do here...
+    if (!this.geometry)
+        return; // Nothing to do here...
+
+    if (this.geometry.liesLeftOf(x,y))
+        ++this.lChildSamples;
+    else
+        ++this.rChildSamples;
 };
 
 OpenLeaf.prototype.recalculateAreas = function(x, y) {
     return 0; // Does not contribute to closed off areas
+};
+
+OpenLeaf.prototype.subdivide = function() {
+    if (!this.geometry)
+        return;
+
+    var lEnemies = [];
+    var rEnemies = [];
+
+    // Sort enemies depending on which side of the new
+    // geometry they are on.
+    var that = this;
+    this.enemies.forEach(function(e) {
+        if (that.geometry.liesLeftOf(e.x, e.y))
+            lEnemies.push(e);
+        else
+            rEnemies.push(e);
+    });
+
+    // For a non-empty list, create an open leaf. Otherwise, create
+    // a closed leaf.
+    var lLeaf = lEnemies.length ? new OpenLeaf(lEnemies) : new ClosedLeaf();
+    var rLeaf = rEnemies.length ? new OpenLeaf(rEnemies) : new ClosedLeaf();
+    var newNode = new InnerNode(this, this.geometry, this.area, lLeaf, rLeaf);
+
+    newNode.lChildSamples = this.lChildSamples;
+    newNode.rChildSamples = this.rChildSamples;
+
+    if (this.parent.lChild === this)
+        this.parent.lChild = newNode;
+    else
+        this.parent.rChild = newNode;
+
+    this.destroy();
 };

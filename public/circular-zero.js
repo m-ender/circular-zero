@@ -40,7 +40,7 @@ var cursor = null;
 var activeLine = null;
 var activeCircle = null;
 
-var hiddenPrimitive = null;
+var affectedLeaves = null;
 
 var totalArea = 0;
 
@@ -241,7 +241,8 @@ function drawScreen()
     stencilBuffer.disable();
 
     cursor.render(CircleType.Inside);
-    enemies.forEach(function(e) { e.render(); });
+    for (var i = 0; i < enemies.length; ++i)
+        enemies[i].render();
 
     if (activeCircle)
         activeCircle.render(CircleType.Circumference);
@@ -291,36 +292,45 @@ function moveCursor(dTime)
         activeLine = null;
         activeCircle = null;
 
-        hiddenPrimitive.show();
-        hiddenPrimitive = null;
+        for (var i = 0; i < affectedLeaves.length; ++i)
+            affectedLeaves[i].subdivide();
+
+        affectedLeaves = null;
 
         recalculateArea();
     }
 }
 
 function moveEnemies(dTime) {
-    openLeaves.forEach(function(o) {
-        var i, e;
-        for (i = 0; i < o.enemies.length; ++i)
+    var steps = 1;
+    var o, e;
+
+    for (var i = 0; i < steps; ++i)
+    {
+        for (var j = 0; j < openLeaves.length; ++j)
         {
-            e = o.enemies[i];
-            e.x += e.vx * dTime / 1000;
-            e.y += e.vy * dTime / 1000;
-
-            e.geometry.x = e.x;
-            e.geometry.y = e.y;
-
-            if (e.geometry.collidesWith(o.parent.geometry))
+            o = openLeaves[j];
+            for (var k = 0; k < o.enemies.length; ++k)
             {
-                var d = e.x*e.x + e.y*e.y;
-                var p = e.vx * e.x + e.vy * e.y;
-                var rx = - e.x * p/d;
-                var ry = - e.y * p/d;
-                e.vx += 2*rx;
-                e.vy += 2*ry;
+                e = o.enemies[k];
+                e.x += e.vx * dTime / (1000 * steps);
+                e.y += e.vy * dTime / (1000 * steps);
+
+                e.geometry.x = e.x;
+                e.geometry.y = e.y;
+
+                if (e.geometry.collidesWith(o.parent.geometry))
+                {
+                    var d = e.x*e.x + e.y*e.y;
+                    var p = e.vx * e.x + e.vy * e.y;
+                    var rx = - e.x * p/d;
+                    var ry = - e.y * p/d;
+                    e.vx += 2*rx;
+                    e.vy += 2*ry;
+                }
             }
         }
-    });
+    }
 }
 
 function handleMouseMove(event) {
@@ -446,10 +456,7 @@ function handleMouseUp(event) {
             activeCircle.color
         );
 
-        newCircle.hide();
-
-        rootCircle.insert(newCircle);
-        hiddenPrimitive = newCircle;
+        affectedLeaves = rootCircle.insert(newCircle);
     }
     else
     {
@@ -465,10 +472,7 @@ function handleMouseUp(event) {
             activeLine.color
         );
 
-        newLine.hide();
-
-        rootCircle.insert(newLine);
-        hiddenPrimitive = newLine;
+        affectedLeaves = rootCircle.insert(newLine);
     }
 
     cursorMoving = true;
