@@ -123,9 +123,9 @@ function init()
 
     gl.useProgram(null);
 
-    enemies.push(new Enemy(0, 0.5, enemySpeed, pi, enemyRadius));
-    enemies.push(new Enemy(0.5*cos(-pi/6), 0.5*sin(-pi/6), enemySpeed, pi/3, enemyRadius));
-    enemies.push(new Enemy(0.5*cos(-5*pi/6), 0.5*sin(-pi/6), enemySpeed, -pi/3, enemyRadius));
+    enemies.push(new Enemy(0, 0.5*0.975, enemySpeed, pi, enemyRadius));
+    enemies.push(new Enemy(0.5*cos(-pi/6)*0.975, 0.5*sin(-pi/6)*0.975, enemySpeed, pi/3, enemyRadius));
+    enemies.push(new Enemy(0.5*cos(-5*pi/6)*0.975, 0.5*sin(-pi/6)*0.975, enemySpeed, -pi/3, enemyRadius));
 
     var innerLeafNode = new OpenLeaf(enemies.slice());
     var outerLeafNode = new ClosedLeaf();
