@@ -110,7 +110,7 @@ function init()
 
     stencilBuffer = new StencilBuffer(gl);
 
-    gl.clearColor(1, 1, 1, 1);
+    gl.clearColor(0.5, 0.5, 0.5, 1);
 
     // Load shaders and get uniform locations
     circleProgram.program = InitShaders(gl, "circle-vertex-shader", "minimal-fragment-shader");
@@ -332,11 +332,12 @@ function update()
         if (levelCompleted)
         {
             ++currentLevel;
-            addWalls(wallsPerLevel);
+            addWalls(currentLevel + 1);
             levelCompleted = false;
         }
         else
         {
+            currentLevel = 1;
             setRemainingWalls(initialWalls);
         }
         initializeLevel(currentLevel);
@@ -348,7 +349,13 @@ function drawScreen()
     gl.enable(gl.BLEND);
 
     gl.viewport(0, 0, viewPort.width, viewPort.height);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+
+    if (activeCircle)
+        activeCircle.render(CircleType.Circumference);
+
+    if (activeLine)
+        activeLine.render(LineType.Line);
 
     stencilBuffer.enable();
     rootCircle.render();
@@ -357,12 +364,6 @@ function drawScreen()
     cursor.render(CircleType.Inside);
     for (var i = 0; i < enemies.length; ++i)
         enemies[i].render();
-
-    if (activeCircle)
-        activeCircle.render(CircleType.Circumference);
-
-    if (activeLine)
-        activeLine.render(LineType.Line);
 
     gl.disable(gl.BLEND);
 }
