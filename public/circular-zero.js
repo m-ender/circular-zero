@@ -181,6 +181,7 @@ function initializeLevel(nEnemies)
 
     totalArea = 0;
     debugBox.find('#area').html(0);
+    debugBox.find('#level').html(nEnemies);
 
     if (debug)
         displayTree();
@@ -219,7 +220,8 @@ function addWalls(n)
 
 function renderInstructions()
 {
-    debugBox.html('Progress: <span id="area">0</span>%<br>' +
+    debugBox.html('Level <span id="level"></span><br>' +
+                  'Progress: <span id="area">0</span>%<br>' +
                   'Remaining walls: <span id="walls"></span><br>' +
                   '================================<br><br>' +
                   'Goal:<br><br>' +
