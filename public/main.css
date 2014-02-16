@@ -12,6 +12,18 @@ body {
     user-select: none;
 }
 
+#title {
+    position: absolute;
+    font-family: Consolas;
+    left: 100px;
+    width: 1112px;
+    height: 75px;
+    top: 25px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 36pt;
+}
+
 #gl-canvas {
     position: absolute;
     left: 400px;
