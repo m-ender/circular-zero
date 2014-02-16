@@ -55,7 +55,7 @@ var direction = null; // Only necessary for motion around activeCircle
 var cursorSpeed = 1; // given in length units per second
 
 var enemyRadius = 0.025;
-var enemySpeed = 0.5; // given in length units per second
+var enemySpeed = 0.3; // given in length units per second
 
 window.onload = init;
 
