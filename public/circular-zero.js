@@ -132,7 +132,7 @@ function init()
     innerLeafNode.area = 1; // we are only interested in the relative area
     outerLeafNode.area = 0; // don't count what's outside the main game arena
     rootCircle = new InnerNode(null, new Circle(0, 0, 1, CircleType.Circumference), 1, innerLeafNode, outerLeafNode);
-    cursor = new Circle(1, 0, 0.05, CircleType.Inside, 0, 2*pi, [0, 0.7, 0]);
+    cursor = new Circle(1, 0, 0.025, CircleType.Inside, 0, 2*pi, [0, 0.7, 0]);
 
     colorGenerator = new ColorGenerator();
 
@@ -307,6 +307,7 @@ function moveEnemies(dTime) {
         var o = openLeaves[j];
         for (var k = 0; k < o.enemies.length; ++k)
         {
+            // Move enemies and resolve collisions with walls
             var e = o.enemies[k];
 
             var dvleft = e.v * dTime / 1000;
@@ -455,8 +456,84 @@ function moveEnemies(dTime) {
 
             e.geometry.x = e.x;
             e.geometry.y = e.y;
+
+            // Check for collisions with moving cursor or growing geometry
+            if (cursorMoving)
+            {
+                if (e.geometry.collidesWith(cursor))
+                    abortNewGeometry();
+
+                if (o.geometry && e.geometry.collidesWith(o.geometry))
+                {
+                    if (activeCircle)
+                    {
+                        // Get angle of intersection
+                        var xp = e.x - activeCircle.x;
+                        var yp = e.y - activeCircle.y;
+
+                        var iAngle = atan2(yp, xp);
+
+                        // Make sure the distance between fromAngle and iAngle is less than pi
+                        if (iAngle - activeCircle.fromAngle > pi)
+                            iAngle -= 2*pi;
+                        else if (iAngle - activeCircle.fromAngle < -pi)
+                            iAngle += 2*pi;
+
+                        // Take care of the fact that toAngle can be growing in the positive
+                        // or the negative direction.
+                        if (iAngle > activeCircle.fromAngle && iAngle < activeCircle.toAngle ||
+                            iAngle < activeCircle.fromAngle && iAngle > activeCircle.toAngle
+                        ) {
+                            abortNewGeometry();
+                        }
+                    }
+                    else
+                    {
+                        // Get position of enemy along line by projection
+                        var lx = cos(activeLine.angle);
+                        var ly = sin(activeLine.angle);
+
+                        var emu = lx*e.x + ly*e.y;
+
+                        if (emu < activeLine.toDistance)
+                            abortNewGeometry();
+                    }
+                }
+            }
         }
     }
+}
+
+function abortNewGeometry() {
+    cursorMoving = false;
+
+    var endPoint;
+    if (activeCircle)
+    {
+        activeCircle.toAngle = activeCircle.fromAngle;
+        endPoint = activeCircle.getEndPoint();
+        activeCircle.destroy();
+        activeCircle = null;
+    }
+    else
+    {
+        activeLine.toDistance = -1;
+        endPoint = activeLine.getEndPoint();
+        activeLine.destroy();
+        activeLine = null;
+    }
+
+    cursor.x = endPoint.x;
+    cursor.y = endPoint.y;
+
+    // All leaves share the same geometry object
+    if (affectedLeaves.length)
+        affectedLeaves[0].geometry.destroy();
+
+    for (var i = 0; i < affectedLeaves.length; ++i)
+        affectedLeaves[i].geometry = null;
+
+    affectedLeaves = null;
 }
 
 function handleMouseMove(event) {
