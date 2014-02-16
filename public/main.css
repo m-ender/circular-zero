@@ -48,3 +48,19 @@ body {
     height: 502px;
     overflow-y: auto;
 }
+
+#debug ul.attention {
+  list-style: none;
+  margin-left: 0;
+  padding-left: 20px;
+}
+
+#debug ul.attention li {
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+
+#debug ul.attention li:before {
+  content: "!";
+  padding-right: 10px;
+}

@@ -1,3 +1,5 @@
+var debug = false;
+
 var canvas;
 var messageBox;
 var debugBox;
@@ -82,6 +84,9 @@ function init()
     messageBox = $('#message');
     debugBox = $('#debug');
 
+    if (!debug)
+        renderInstructions();
+
     gl = WebGLUtils.setupWebGL(canvas, {stencil: true});
     if (!gl) {
         messageBox.html("WebGL is not available!");
@@ -136,7 +141,8 @@ function init()
 
     colorGenerator = new ColorGenerator();
 
-    displayTree();
+    if (debug)
+        displayTree();
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -144,6 +150,23 @@ function init()
 
     lastTime = Date.now();
     update();
+}
+
+function renderInstructions()
+{
+    debugBox.html('Progress: <span id="area">0</span>%<br><br>' +
+                  '================================<br><br>' +
+                  'Goal:<br><br>' +
+                  'Color in 75% of the area!<br><br>' +
+                  'How to play:<br>' +
+                  '<ul>' +
+                  '  <li>Click and hold to lock the green cursor\'s position.' +
+                  '  <li>Drag to choose path.' +
+                  '  <li>Release to build wall.' +
+                  '</ul>' +
+                  '<ul class="attention">' +
+                  '  <li>Areas that don\'t contain enemies will be colored in.' +
+                  '  <li>If the cursor or the wall is hit while a wall is being built, you lose the wall!');
 }
 
 function InitShaders(gl, vertexShaderId, fragmentShaderId)
@@ -543,8 +566,11 @@ function handleMouseMove(event) {
     var rect = canvas.getBoundingClientRect();
     var coords = normaliseCursorCoordinates(event, rect);
 
-    debugBox.find('#xcoord').html(coords.x);
-    debugBox.find('#ycoord').html(coords.y);
+    if (debug)
+    {
+        debugBox.find('#xcoord').html(coords.x);
+        debugBox.find('#ycoord').html(coords.y);
+    }
 
     if (mouseDown)
     {
@@ -586,8 +612,11 @@ function handleMouseDown(event) {
     var rect = canvas.getBoundingClientRect();
     var coords = normaliseCursorCoordinates(event, rect);
 
-    debugBox.find('#xdown').html(coords.x);
-    debugBox.find('#ydown').html(coords.y);
+    if (debug)
+    {
+        debugBox.find('#xdown').html(coords.x);
+        debugBox.find('#ydown').html(coords.y);
+    }
 
     var newColor = colorGenerator.nextColor(true);
     newColor =  [newColor.red()/255, newColor.green()/255, newColor.blue()/255];
@@ -609,8 +638,11 @@ function handleMouseUp(event) {
     var rect = canvas.getBoundingClientRect();
     var coords = normaliseCursorCoordinates(event, rect);
 
-    debugBox.find('#xup').html(coords.x);
-    debugBox.find('#yup').html(coords.y);
+    if (debug)
+    {
+        debugBox.find('#xup').html(coords.x);
+        debugBox.find('#yup').html(coords.y);
+    }
 
     mouseDown = false;
 
@@ -739,7 +771,7 @@ function recalculateArea()
         totalArea = newArea;
         debugBox.find('#area').html((totalArea*100).toFixed());
     }
-    displayTree();
+    if (debug) displayTree();
 }
 
 function displayTree()
