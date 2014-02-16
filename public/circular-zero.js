@@ -3,6 +3,10 @@ var debug = false;
 var canvas;
 var messageBox;
 var debugBox;
+var resultBox;
+
+var splashStarted = null;
+var splashDuration = 3;// in seconds
 
 var gl;
 var stencilBuffer;
@@ -44,9 +48,11 @@ var activeCircle = null;
 
 var affectedLeaves = null;
 
-var totalArea = 0;
+var totalArea;
 
-var enemies = [];
+var enemies;
+
+var currentLevel;
 
 var mouseDown = false;
 var cursorMoving = false;
@@ -83,6 +89,7 @@ function init()
 
     messageBox = $('#message');
     debugBox = $('#debug');
+    resultBox = $('#result');
 
     if (!debug)
         renderInstructions();
@@ -128,21 +135,13 @@ function init()
 
     gl.useProgram(null);
 
-    enemies.push(new Enemy(0, 0.5*0.975, enemySpeed, pi, enemyRadius));
-    enemies.push(new Enemy(0.5*cos(-pi/6)*0.975, 0.5*sin(-pi/6)*0.975, enemySpeed, pi/3, enemyRadius));
-    enemies.push(new Enemy(0.5*cos(-5*pi/6)*0.975, 0.5*sin(-pi/6)*0.975, enemySpeed, -pi/3, enemyRadius));
-
-    var innerLeafNode = new OpenLeaf(enemies.slice());
-    var outerLeafNode = new ClosedLeaf();
-    innerLeafNode.area = 1; // we are only interested in the relative area
-    outerLeafNode.area = 0; // don't count what's outside the main game arena
-    rootCircle = new InnerNode(null, new Circle(0, 0, 1, CircleType.Circumference), 1, innerLeafNode, outerLeafNode);
     cursor = new Circle(1, 0, 0.025, CircleType.Inside, 0, 2*pi, [0, 0.7, 0]);
 
     colorGenerator = new ColorGenerator();
 
-    if (debug)
-        displayTree();
+    currentLevel = 1;
+
+    initializeLevel(currentLevel);
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -150,6 +149,45 @@ function init()
 
     lastTime = Date.now();
     update();
+}
+
+function initializeLevel(nEnemies)
+{
+    enemies = [];
+    for (var i = 0; i < nEnemies; ++i)
+    {
+        // This randomisation procedure will generate more enemies
+        // in the centre of the arena. This might actually be
+        // desirable though.
+        var r = Math.random() * (1 - enemyRadius);
+        var phi = Math.random() * 2*pi;
+        var angle = Math.random() * 2*pi;
+        enemies.push(new Enemy(r*cos(phi), r*sin(phi), enemySpeed, angle, enemyRadius));
+    }
+
+    var innerLeafNode = new OpenLeaf(enemies.slice());
+    var outerLeafNode = new ClosedLeaf();
+    innerLeafNode.area = 1; // we are only interested in the relative area
+    outerLeafNode.area = 0; // don't count what's outside the main game arena
+    rootCircle = new InnerNode(null, new Circle(0, 0, 1, CircleType.Circumference), 1, innerLeafNode, outerLeafNode);
+
+    totalArea = 0;
+    debugBox.find('#area').html(0);
+
+    if (debug)
+        displayTree();
+}
+
+function destroyLevel()
+{
+    rootCircle.destroy();
+}
+
+function jumpToLevel(n)
+{
+    destroyLevel();
+    currentLevel = n;
+    initializeLevel(n);
 }
 
 function renderInstructions()
@@ -166,7 +204,8 @@ function renderInstructions()
                   '</ul>' +
                   '<ul class="attention">' +
                   '  <li>Areas that don\'t contain enemies will be colored in.' +
-                  '  <li>If the cursor or the wall is hit while a wall is being built, you lose the wall!');
+                  '  <li>If the cursor or the wall is hit while a wall is being built, you lose the wall!' +
+                  '</ul>');
 }
 
 function InitShaders(gl, vertexShaderId, fragmentShaderId)
@@ -249,6 +288,15 @@ function update()
         moveEnemies(dTime);
 
         drawScreen();
+    }
+
+    if (splashStarted && currentTime - splashStarted > splashDuration * 1000)
+    {
+        splashStarted = null;
+        resultBox.html('');
+        destroyLevel();
+        ++currentLevel;
+        initializeLevel(currentLevel);
     }
 }
 
@@ -610,7 +658,7 @@ function handleMouseMove(event) {
 }
 
 function handleMouseDown(event) {
-    if (cursorMoving)
+    if (cursorMoving || splashStarted)
         return;
 
     var rect = canvas.getBoundingClientRect();
@@ -636,7 +684,7 @@ function handleMouseDown(event) {
 }
 
 function handleMouseUp(event) {
-    if (cursorMoving)
+    if (cursorMoving || splashStarted || (!activeCircle && !activeLine))
         return;
 
     var rect = canvas.getBoundingClientRect();
@@ -776,6 +824,12 @@ function recalculateArea()
         debugBox.find('#area').html((totalArea*100).toFixed());
     }
     if (debug) displayTree();
+
+    if ((totalArea*100).toFixed() >= 75)
+    {
+        splashStarted = Date.now();
+        resultBox.html('YOU WIN');
+    }
 }
 
 function displayTree()

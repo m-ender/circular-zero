@@ -104,6 +104,7 @@ Line.prototype.destroy = function() {
             continue;
 
         gl.deleteBuffer(this.vertices[type].bufferId);
+        delete this.vertices[type];
     }
 
     for (type in this.colors)
@@ -112,6 +113,7 @@ Line.prototype.destroy = function() {
             continue;
 
         gl.deleteBuffer(this.colors[type].bufferId);
+        delete this.colors[type];
     }
 };
 

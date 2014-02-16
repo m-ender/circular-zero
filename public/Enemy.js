@@ -14,6 +14,11 @@ function Enemy(x, y, v, angle, r)
     return this;
 }
 
+Enemy.prototype.destroy = function() {
+    this.geometry.destroy();
+    this.geometry = null;
+};
+
 Enemy.prototype.setAngle = function(angle) {
     this.angle = angle;
 

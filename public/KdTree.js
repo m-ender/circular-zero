@@ -72,6 +72,15 @@ function InnerNode(parent, geometry, area, lChild, rChild)
     return this;
 }
 
+InnerNode.prototype.destroy = function() {
+    this.parent = null;
+    this.geometry.destroy();
+    this.lChild.destroy();
+    this.rChild.destroy();
+    this.lChild = null;
+    this.rChild = null;
+};
+
 InnerNode.prototype.render = function() {
     if (this.geometryType === CircleType.Circumference)
     {
@@ -265,6 +274,10 @@ function ClosedLeaf(parent)
     this.area = 0;
 }
 
+ClosedLeaf.prototype.destroy = function() {
+    this.parent = null;
+};
+
 ClosedLeaf.prototype.toString = function(depth) {
     var indent = new Array(depth + 1).join('|');
     return indent + 'Closed; A: ' + this.area.toFixed(2) + '\n';
@@ -301,9 +314,21 @@ function OpenLeaf(enemies, parent)
 }
 
 OpenLeaf.prototype.destroy = function() {
-    this.enemies = null;
+    if (this.enemies)
+    {
+        for (var i = 0; i < this.enemies.length; ++i)
+            this.enemies[i].destroy();
+        this.enemies = null;
+    }
+
     var index = openLeaves.indexOf(this);
     openLeaves.splice(index, 1);
+
+    if (this.geometry)
+    {
+        this.geometry.destroy();
+        this.geometry = null;
+    }
 };
 
 OpenLeaf.prototype.toString = function(depth) {
@@ -359,6 +384,10 @@ OpenLeaf.prototype.subdivide = function() {
         this.parent.lChild = newNode;
     else
         this.parent.rChild = newNode;
+
+    // Avoid destruction of geometry or enemies, as they are shared with other nodes
+    this.geometry = null;
+    this.enemies = null;
 
     this.destroy();
 };
