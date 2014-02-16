@@ -7,6 +7,7 @@ var resultBox;
 
 var splashStarted = null;
 var splashDuration = 3;// in seconds
+var levelCompleted = false;
 
 var gl;
 var stencilBuffer;
@@ -53,6 +54,7 @@ var totalArea;
 var enemies;
 
 var currentLevel;
+var remainingWalls;
 
 var mouseDown = false;
 var cursorMoving = false;
@@ -60,10 +62,15 @@ var target = null; // Could be either a .toDistance for activeLine or a .toAngle
 var direction = null; // Only necessary for motion around activeCircle
 
 // Gameplay configuration
+var cursorRadius = 0.025;
 var cursorSpeed = 1; // given in length units per second
 
 var enemyRadius = 0.025;
 var enemySpeed = 0.3; // given in length units per second
+
+var initialWalls = 10;
+var wallsPerLevel = 5;
+
 
 window.onload = init;
 
@@ -141,6 +148,7 @@ function init()
 
     currentLevel = 1;
 
+    setRemainingWalls(initialWalls);
     initializeLevel(currentLevel);
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -190,9 +198,29 @@ function jumpToLevel(n)
     initializeLevel(n);
 }
 
+function setRemainingWalls(n)
+{
+    remainingWalls = n;
+    debugBox.find('#walls').html(remainingWalls);
+}
+
+function useWall()
+{
+    --remainingWalls;
+    debugBox.find('#walls').html(remainingWalls);
+}
+
+function addWalls(n)
+{
+    remainingWalls += n;
+    debugBox.find('#walls').html(remainingWalls);
+}
+
+
 function renderInstructions()
 {
-    debugBox.html('Progress: <span id="area">0</span>%<br><br>' +
+    debugBox.html('Progress: <span id="area">0</span>%<br>' +
+                  'Remaining walls: <span id="walls"></span><br>' +
                   '================================<br><br>' +
                   'Goal:<br><br>' +
                   'Color in 75% of the area!<br><br>' +
@@ -290,12 +318,27 @@ function update()
         drawScreen();
     }
 
+    if (!splashStarted && !cursorMoving && remainingWalls === 0)
+    {
+        splashStarted = currentTime;
+        resultBox.html('YOU LOSE');
+    }
+
     if (splashStarted && currentTime - splashStarted > splashDuration * 1000)
     {
         splashStarted = null;
         resultBox.html('');
         destroyLevel();
-        ++currentLevel;
+        if (levelCompleted)
+        {
+            ++currentLevel;
+            addWalls(wallsPerLevel);
+            levelCompleted = false;
+        }
+        else
+        {
+            setRemainingWalls(initialWalls);
+        }
         initializeLevel(currentLevel);
     }
 }
@@ -762,6 +805,8 @@ function handleMouseUp(event) {
         affectedLeaves = rootCircle.insert(newLine);
     }
 
+    useWall();
+
     cursorMoving = true;
 }
 
@@ -828,6 +873,7 @@ function recalculateArea()
     if ((totalArea*100).toFixed() >= 75)
     {
         splashStarted = Date.now();
+        levelCompleted = true;
         resultBox.html('YOU WIN');
     }
 }
