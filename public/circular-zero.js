@@ -317,56 +317,99 @@ function moveEnemies(dTime) {
                 var nearestD2 = dvleft*dvleft;
                 var nearestR = null;
                 var nearestSign = null;
+                var nearestAOI = null;
 
                 var currentNode;
                 while ((currentNode = lastChild.parent) !== null)
                 {
-                    // Compute the distance from the centre of the circle
-                    var dx = currentNode.geometry.x - e.x;
-                    var dy = currentNode.geometry.y - e.y;
-                    var dc = sqrt(dx*dx + dy*dy);
-
                     // Several of the following calculations change their sign
-                    // depending on if we're inside or outside of the circle
+                    // depending on what side of the geometry they are on
                     var sign;
                     if (lastChild === currentNode.lChild)
                         sign = -1;
                     else
                         sign = 1;
 
-                    // We now transform the collision problem into an equivalent
-                    // one where the enemy is just a point and we add its radius
-                    // to that of the wall.
-                    var r = currentNode.geometry.r + sign * e.geometry.r;
-                    var d = sign * (dc - r);
-
-                    if (d < dvleft)
+                    if (currentNode.geometry instanceof Circle)
                     {
-                        // The line (e.x,e.y) + mu (e.vy,e.vy) is the line along which the
-                        // enemy moves (with the direction being normalised).
+                        // Compute the distance from the centre of the circle
+                        var dx = currentNode.geometry.x - e.x;
+                        var dy = currentNode.geometry.y - e.y;
+                        var dc = sqrt(dx*dx + dy*dy);
 
-                        // Project the centre of the circle onto that vector (dot product).
-                        // Going this distance along the line will lead to the point halfway
-                        // between the intersections.
-                        var mu = e.vx * dx + e.vy * dy;
+                        // We now transform the collision problem into an equivalent
+                        // one where the enemy is just a point and we add its radius
+                        // to that of the wall.
+                        var r = currentNode.geometry.r + sign * e.geometry.r;
+                        var d = sign * (dc - r);
 
-                        // Project centre of the circle onto a vector perpendicular to the line.
-                        // This will be the perpendicular distance from the line.
-                        d = e.vx * dy - e.vy * dx;
-
-                        // Use Pythagoras to get the distance along the line to the two intersections.
-                        var dmu = sqrt(r * r - d * d);
-
-                        // Determine vector from enemy to collision coordinates and it's squared length
-                        var cx = e.vx * (mu - sign * dmu);
-                        var cy = e.vy * (mu - sign * dmu);
-                        var c2 = cx * cx + cy * cy;
-                        if (c2 < nearestD2)
+                        // Only look for an intersection we're closer than we can possibly
+                        // travel.
+                        if (d < dvleft)
                         {
-                            nearestD2 = c2;
-                            nearestR = r;
-                            nearestN = currentNode;
-                            nearestSign = sign;
+                            // The line (e.x,e.y) + mu (e.vy,e.vy) is the line along which the
+                            // enemy moves (with the direction being normalised).
+
+                            // Project the centre of the circle onto that vector (dot product).
+                            // Going this distance along the line will lead to the point halfway
+                            // between the intersections.
+                            var mu = e.vx * dx + e.vy * dy;
+
+                            // Project centre of the circle onto a vector perpendicular to the line.
+                            // This will be the perpendicular distance from the line.
+                            d = e.vx * dy - e.vy * dx;
+
+                            // Use Pythagoras to get the distance along the line to the two intersections.
+                            var dmu = sqrt(r * r - d * d);
+
+                            // Determine vector from enemy to collision coordinates and it's squared length
+                            var cx = e.vx * (mu - sign * dmu);
+                            var cy = e.vy * (mu - sign * dmu);
+                            var c2 = cx * cx + cy * cy;
+                            if (c2 < nearestD2)
+                            {
+                                nearestD2 = c2;
+                                nearestR = r;
+                                nearestN = currentNode;
+                                nearestSign = sign;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var lAngle = currentNode.geometry.angle;
+
+                        // Create a normalised vector perpendicular to the line.
+                        var x = cos(lAngle - sign*pi/2);
+                        var y = sin(lAngle - sign*pi/2);
+
+                        // Project the centre and velocity of the enemy onto
+                        // that vector (dot product).
+
+                        // This will be the perpendicular distance from the line
+                        // taking into account the enemy's radius.
+                        var de = x * e.x + y * e.y - e.geometry.r;
+                        // This will be negative if we're moving towards the line
+                        var dev = x * e.vx + y * e.vy;
+
+                        // Only look for an intersection if we're closer than we can
+                        // possibly travel and if we're travelling towards the line.
+                        if (dev < 0 && de < dvleft)
+                        {
+                            // Get angle of incidence (relative to normal)
+                            var aoi = lAngle + sign*pi/2 - e.angle;
+
+                            // Get the square of the actual distance to be travelled
+                            var d2 = de / cos(aoi);
+                            d2 = d2*d2;
+
+                            if (d2 < nearestD2)
+                            {
+                                nearestD2 = d2;
+                                nearestAOI = aoi;
+                                nearestSign = sign;
+                                nearestN = currentNode;
+                            }
                         }
                     }
 
@@ -379,25 +422,32 @@ function moveEnemies(dTime) {
 
                 if (nearestN)
                 {
-                    // Find vector from geometry centre to collision point
-                    var px = nearestSign*(nearestN.geometry.x - e.x);
-                    var py = nearestSign*(nearestN.geometry.y - e.y);
+                    if (nearestN.geometry instanceof Circle)
+                    {
+                        // Find vector from geometry centre to collision point
+                        var px = nearestSign*(nearestN.geometry.x - e.x);
+                        var py = nearestSign*(nearestN.geometry.y - e.y);
 
-                    var dAngle = atan2(py, px) - e.angle;
+                        var dAngle = atan2(py, px) - e.angle;
 
-                    e.setAngle(e.angle + 2*dAngle + pi);
+                        e.setAngle(e.angle + 2*dAngle + pi);
 
-                    /*
-                    // Project velocity onto that vector
-                    var p = e.vx * px + e.vy * py;
+                        /*
+                        // Project velocity onto that vector
+                        var p = e.vx * px + e.vy * py;
 
-                    // Reflection vector is opposite to twice that projection along
-                    // the vector. Also do normalisation now.
-                    var rx = px * p/nearestR;
-                    var ry = py * p/nearestR;
-                    e.vx -= 2*rx;
-                    e.vy -= 2*ry;
-                    */
+                        // Reflection vector is opposite to twice that projection along
+                        // the vector. Also do normalisation now.
+                        var rx = px * p/nearestR;
+                        var ry = py * p/nearestR;
+                        e.vx -= 2*rx;
+                        e.vy -= 2*ry;
+                        */
+                    }
+                    else
+                    {
+                        e.setAngle(e.angle + 2*nearestAOI + pi);
+                    }
                 }
 
                 dvleft -= dv;
