@@ -110,7 +110,7 @@ function init()
 
     stencilBuffer = new StencilBuffer(gl);
 
-    gl.clearColor(0.5, 0.5, 0.5, 1);
+    gl.clearColor(1, 1, 1, 1);
 
     // Load shaders and get uniform locations
     circleProgram.program = InitShaders(gl, "circle-vertex-shader", "minimal-fragment-shader");
@@ -714,16 +714,13 @@ function handleMouseDown(event) {
         debugBox.find('#ydown').html(coords.y);
     }
 
-    var newColor = colorGenerator.nextColor(true);
-    newColor =  [newColor.red()/255, newColor.green()/255, newColor.blue()/255];
-
     mouseDown = true;
-    activeLine = new Line(atan2(-cursor.y, -cursor.x), LineType.Line, 1, newColor);
+    activeLine = new Line(atan2(-cursor.y, -cursor.x), LineType.Line, 1, [0,0,0]);
 
     // This position is arbitrary. When the user clicks, the
     // line will always be shown and the circles parameters
     // will be recalculated as soon as the mouse is moved.
-    activeCircle = new Circle(cursor.x, cursor.y, 0.2, CircleType.Circumference, 0, 2*pi, newColor);
+    activeCircle = new Circle(cursor.x, cursor.y, 0.2, CircleType.Circumference, 0, 2*pi, [0,0,0]);
     activeCircle.hide();
 }
 
@@ -741,6 +738,9 @@ function handleMouseUp(event) {
     }
 
     mouseDown = false;
+
+    var newColor = colorGenerator.nextColor(true);
+    newColor =  [newColor.red()/255, newColor.green()/255, newColor.blue()/255];
 
     if (!activeCircle.hidden)
     {
@@ -784,7 +784,7 @@ function handleMouseUp(event) {
             activeCircle.type,
             activeCircle.fromAngle,
             target,
-            activeCircle.color
+            newColor
         );
 
         affectedLeaves = rootCircle.insert(newCircle);
@@ -800,7 +800,7 @@ function handleMouseUp(event) {
             activeLine.angle,
             activeLine.type,
             target,
-            activeLine.color
+            newColor
         );
 
         affectedLeaves = rootCircle.insert(newLine);
