@@ -554,7 +554,11 @@ function abortNewGeometry() {
         affectedLeaves[0].geometry.destroy();
 
     for (var i = 0; i < affectedLeaves.length; ++i)
+    {
         affectedLeaves[i].geometry = null;
+        affectedLeaves[i].lChildSamples = 0;
+        affectedLeaves[i].rChildSamples = 0;
+    }
 
     affectedLeaves = null;
 }
