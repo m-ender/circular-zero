@@ -291,7 +291,7 @@ function InitShaders(gl, vertexShaderId, fragmentShaderId)
     return program;
 }
 
-// This is a fixed-framerate game loop.
+// This is a fixed-framerate game loop. dT is not constant, though
 function update()
 {
     window.requestAnimFrame(update, canvas);
@@ -307,13 +307,15 @@ function update()
         // The modulo is to take care of the case that we skipped a frame
         lastTime = currentTime - (dTime % interval);
 
+        var steps = floor(dTime / interval);
+
         if (cursorMoving)
         {
             runMonteCarlo(100);
-            moveCursor(dTime);
+            moveCursor(steps * interval);
         }
 
-        moveEnemies(dTime);
+        moveEnemies(steps * interval);
 
         drawScreen();
     }
