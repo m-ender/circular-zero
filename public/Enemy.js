@@ -41,13 +41,7 @@ Enemy.prototype.move = function(x,y) {
 };
 
 Enemy.prototype.moveBy = function(dx,dy) {
-    this.x += dx;
-    this.y += dy;
-
-    this.geometry.x += dx;
-    this.geometry.y += dy;
-    this.outline.x += dx;
-    this.outline.y += dy;
+    this.move(this.x + dx, this.y + dy);
 };
 
 Enemy.prototype.render = function() {

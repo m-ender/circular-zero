@@ -88,7 +88,7 @@ var EnemyTypes = [
     {
         radius: 0.01,
         speed: 1,
-        level: 2
+        level: 3
     }
 ];
 
@@ -191,6 +191,8 @@ function setGameMode(mode)
     gameMode = mode;
     messageBox.find('#'+gameMode).addClass('active');
 
+    destroyLevel();
+
     currentLevel = 1;
 
     setRemainingWalls(initialWalls);
@@ -270,7 +272,8 @@ function initializeVarietyArcadeLevel(level)
 
 function destroyLevel()
 {
-    rootCircle.destroy();
+    if (rootCircle)
+        rootCircle.destroy();
 }
 
 function jumpToLevel(n)
