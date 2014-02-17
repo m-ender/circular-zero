@@ -11,12 +11,15 @@ function Enemy(x, y, v, angle, r)
     this.r = r;
 
     this.geometry = new Circle(x, y, r, CircleType.Inside, 0, 2*pi, [0.5, 0, 0]);
+    this.outline = new Circle(x, y, r, CircleType.Circumference, 0, 2*pi, [1, 1, 1]);
     return this;
 }
 
 Enemy.prototype.destroy = function() {
     this.geometry.destroy();
     this.geometry = null;
+    this.outline.destroy();
+    this.outline = null;
 };
 
 Enemy.prototype.setAngle = function(angle) {
@@ -27,8 +30,29 @@ Enemy.prototype.setAngle = function(angle) {
     this.vy = sin(angle);
 };
 
+Enemy.prototype.move = function(x,y) {
+    this.x = x;
+    this.y = y;
+
+    this.geometry.x = x;
+    this.geometry.y = y;
+    this.outline.x = x;
+    this.outline.y = y;
+};
+
+Enemy.prototype.moveBy = function(dx,dy) {
+    this.x += dx;
+    this.y += dy;
+
+    this.geometry.x += dx;
+    this.geometry.y += dy;
+    this.outline.x += dx;
+    this.outline.y += dy;
+};
+
 Enemy.prototype.render = function() {
     this.geometry.render(CircleType.Inside);
+    this.outline.render(CircleType.Circumference);
 };
 
 Enemy.prototype.update = function(dTime) {

@@ -48,6 +48,14 @@ body {
     overflow-y: auto;
 }
 
+#message .active, #message .active:hover {
+    color: green;
+}
+
+#message a:hover {
+    color: gray;
+}
+
 #debug{
     padding: 5px;
     background: rgb(48, 41, 17);

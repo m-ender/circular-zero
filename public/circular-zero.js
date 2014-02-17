@@ -62,11 +62,35 @@ var target = null; // Could be either a .toDistance for activeLine or a .toAngle
 var direction = null; // Only necessary for motion around activeCircle
 
 // Gameplay configuration
+var GameMode = {
+    ClassicArcade: "classicArcade", // random levels, one enemy type
+    VarietyArcade: "varietyArcade", // random levels, multiple enemy types
+    Campaign: "campaign", // designed levels
+};
+
+var gameMode;
+
 var cursorRadius = 0.025;
 var cursorSpeed = 1; // given in length units per second
 
-var enemyRadius = 0.025;
-var enemySpeed = 0.3; // given in length units per second
+var EnemyTypes = [
+    { // The default enemy is always at index 0
+        radius: 0.025,
+        speed: 0.3, // given in length units per second
+        level: 1 // this is used to count how many default
+                 // enemies the other types are "worth"
+    },
+    { // A big but slow variant
+        radius: 0.075,
+        speed: 0.2,
+        level: 2
+    }, // A fast but small variant
+    {
+        radius: 0.01,
+        speed: 1,
+        level: 2
+    }
+];
 
 var initialWalls = 10;
 var wallsPerLevel = 5;
@@ -108,6 +132,9 @@ function init()
         messageBox.html("WebGL up and running!");
     }
 
+    if (!debug)
+        renderMenu();
+
     stencilBuffer = new StencilBuffer(gl);
 
     gl.clearColor(1, 1, 1, 1);
@@ -146,10 +173,7 @@ function init()
 
     colorGenerator = new ColorGenerator();
 
-    currentLevel = 1;
-
-    setRemainingWalls(initialWalls);
-    initializeLevel(currentLevel);
+    setGameMode(GameMode.ClassicArcade);
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -159,18 +183,33 @@ function init()
     update();
 }
 
-function initializeLevel(nEnemies)
+function setGameMode(mode)
 {
-    enemies = [];
-    for (var i = 0; i < nEnemies; ++i)
+    if (gameMode === mode) return;
+
+    messageBox.find('#'+gameMode).removeClass('active');
+    gameMode = mode;
+    messageBox.find('#'+gameMode).addClass('active');
+
+    currentLevel = 1;
+
+    setRemainingWalls(initialWalls);
+    initializeLevel(gameMode, currentLevel);
+}
+
+function initializeLevel(mode, level)
+{
+    switch (mode)
     {
-        // This randomisation procedure will generate more enemies
-        // in the centre of the arena. This might actually be
-        // desirable though.
-        var r = Math.random() * (1 - enemyRadius);
-        var phi = Math.random() * 2*pi;
-        var angle = Math.random() * 2*pi;
-        enemies.push(new Enemy(r*cos(phi), r*sin(phi), enemySpeed, angle, enemyRadius));
+    case GameMode.ClassicArcade:
+        initializeClassicArcadeLevel(level);
+        break;
+    case GameMode.VarietyArcade:
+        initializeVarietyArcadeLevel(level);
+        break;
+    case GameMode.Campaign:
+        initializeClassicArcadeLevel(level);
+        break;
     }
 
     var innerLeafNode = new OpenLeaf(enemies.slice());
@@ -181,10 +220,52 @@ function initializeLevel(nEnemies)
 
     totalArea = 0;
     debugBox.find('#area').html(0);
-    debugBox.find('#level').html(nEnemies);
+    debugBox.find('#level').html(level);
 
     if (debug)
         displayTree();
+}
+
+function initializeClassicArcadeLevel(level)
+{
+    var nEnemies = level;
+
+    enemies = [];
+    for (var i = 0; i < nEnemies; ++i)
+    {
+        var type = EnemyTypes[0];
+        // This randomisation procedure will generate more enemies
+        // in the centre of the arena. This might actually be
+        // desirable though.
+        var r = Math.random() * (1 - type.radius);
+        var phi = Math.random() * 2*pi;
+        var angle = Math.random() * 2*pi;
+        enemies.push(new Enemy(r*cos(phi), r*sin(phi), type.speed, angle, type.radius));
+    }
+}
+
+function initializeVarietyArcadeLevel(level)
+{
+    var nEnemies = level;
+
+    enemies = [];
+    while (nEnemies > 0 )
+    {
+        var type;
+        do {
+            type = EnemyTypes[floor(Math.random()*EnemyTypes.length)];
+        } while (type.level > nEnemies);
+
+        // This randomisation procedure will generate more enemies
+        // in the centre of the arena. This might actually be
+        // desirable though.
+        var r = Math.random() * (1 - type.radius);
+        var phi = Math.random() * 2*pi;
+        var angle = Math.random() * 2*pi;
+        enemies.push(new Enemy(r*cos(phi), r*sin(phi), type.speed, angle, type.radius));
+
+        nEnemies -= type.level;
+    }
 }
 
 function destroyLevel()
@@ -196,7 +277,7 @@ function jumpToLevel(n)
 {
     destroyLevel();
     currentLevel = n;
-    initializeLevel(n);
+    initializeLevel(gameMode, n);
 }
 
 function setRemainingWalls(n)
@@ -236,6 +317,26 @@ function renderInstructions()
                   '  <li>Areas that don\'t contain enemies will be colored in.' +
                   '  <li>If the cursor or the wall is hit while a wall is being built, you lose the wall!' +
                   '</ul>');
+}
+
+function renderMenu()
+{
+    messageBox.html('Switch mode:<br>' +
+                    '<br>' +
+                    '<a id="classicArcade">Classic Arcade</a><br>' +
+                    '<a id="varietyArcade">Variety Arcade</a><br>' +
+                    '<a id="campaign">Campaign</a>');
+
+    var createCallback = function(mode) {
+        return function(e) { setGameMode(mode); };
+    };
+
+    for (var key in GameMode)
+    {
+        if (!GameMode.hasOwnProperty(key)) continue;
+
+        messageBox.find('#'+GameMode[key]).bind('click', createCallback(GameMode[key]));
+    }
 }
 
 function InitShaders(gl, vertexShaderId, fragmentShaderId)
@@ -344,7 +445,7 @@ function update()
             currentLevel = 1;
             setRemainingWalls(initialWalls);
         }
-        initializeLevel(currentLevel);
+        initializeLevel(gameMode, currentLevel);
     }
 }
 
@@ -537,8 +638,7 @@ function moveEnemies(dTime) {
                 }
 
                 var dv = sqrt(nearestD2);
-                e.x += e.vx * dv;
-                e.y += e.vy * dv;
+                e.moveBy(e.vx * dv, e.vy * dv);
 
                 if (nearestN)
                 {
@@ -572,9 +672,6 @@ function moveEnemies(dTime) {
 
                 dvleft -= dv;
             }
-
-            e.geometry.x = e.x;
-            e.geometry.y = e.y;
 
             // Check for collisions with moving cursor or growing geometry
             if (cursorMoving)
@@ -711,6 +808,9 @@ function handleMouseDown(event) {
 
     var rect = canvas.getBoundingClientRect();
     var coords = normaliseCursorCoordinates(event, rect);
+
+    if (coords.x < -1.1 || coords.x > 1.1 || coords.y < -1.1 || coords.y > 1.1)
+        return;
 
     if (debug)
     {
