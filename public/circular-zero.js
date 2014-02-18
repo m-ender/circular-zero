@@ -9,15 +9,18 @@ var splashStarted = null;
 var splashType = null;
 
 var SplashScreenType = {
-    LevelStarted: 'LevelStarted',
-    LevelCompleted: 'LevelCompleted',
-    LevelFailed: 'LevelFailed',
-};
-
-var splashDuration = { // in seconds
-    LevelStarted: 2,
-    LevelCompleted: 3,
-    LevelFailed: 3,
+    LevelStarted: {
+        duration: 2,
+        locked: false,
+    },
+    LevelCompleted: {
+        duration: 3,
+        locked: true,
+    },
+    LevelFailed: {
+        duration: 3,
+        locked: true,
+    },
 };
 
 var gl;
@@ -476,7 +479,7 @@ function update()
     if (!splashStarted && !cursorMoving && remainingWalls === 0)
         startSplashScreen(SplashScreenType.LevelFailed, 'YOU LOSE');
 
-    if (splashStarted && currentTime - splashStarted > splashDuration[splashType] * 1000)
+    if (splashStarted && currentTime - splashStarted > splashType.duration * 1000)
         endSplashScreen();
 }
 
@@ -835,8 +838,7 @@ function handleMouseMove(event) {
 
 function handleMouseDown(event) {
     if (cursorMoving ||
-        splashType === SplashScreenType.LevelCompleted ||
-        splashType === SplashScreenType.LevelFailed)
+        splashType && splashType.locked)
         return;
 
     var rect = canvas.getBoundingClientRect();
@@ -863,8 +865,7 @@ function handleMouseDown(event) {
 
 function handleMouseUp(event) {
     if (cursorMoving ||
-        splashType === SplashScreenType.LevelCompleted ||
-        splashType === SplashScreenType.LevelFailed ||
+        splashType && splashType.locked ||
         (!activeCircle && !activeLine))
         return;
 
