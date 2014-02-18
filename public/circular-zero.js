@@ -6,8 +6,19 @@ var debugBox;
 var resultBox;
 
 var splashStarted = null;
-var splashDuration = 3;// in seconds
-var levelCompleted = false;
+var splashType = null;
+
+var SplashScreenType = {
+    LevelStarted: 'LevelStarted',
+    LevelCompleted: 'LevelCompleted',
+    LevelFailed: 'LevelFailed',
+};
+
+var splashDuration = { // in seconds
+    LevelStarted: 2,
+    LevelCompleted: 3,
+    LevelFailed: 3,
+};
 
 var gl;
 var stencilBuffer;
@@ -183,6 +194,40 @@ function init()
     update();
 }
 
+function startSplashScreen(type, message)
+{
+    splashStarted = Date.now();
+    splashType = type;
+
+    resultBox.html(message);
+}
+
+function endSplashScreen()
+{
+    var type = splashType;
+    splashStarted = null;
+    splashType = null;
+    resultBox.html('');
+    switch(type)
+    {
+    case SplashScreenType.LevelStarted:
+        break;
+    case SplashScreenType.LevelCompleted:
+        destroyLevel();
+        ++currentLevel;
+        addWalls(currentLevel + 1);
+        levelCompleted = false;
+        initializeLevel(gameMode, currentLevel);
+        break;
+    case SplashScreenType.LevelFailed:
+        destroyLevel();
+        currentLevel = 1;
+        setRemainingWalls(initialWalls);
+        initializeLevel(gameMode, currentLevel);
+        break;
+    }
+}
+
 function setGameMode(mode)
 {
     if (gameMode === mode) return;
@@ -226,6 +271,8 @@ function initializeLevel(mode, level)
 
     if (debug)
         displayTree();
+
+    startSplashScreen(SplashScreenType.LevelStarted, 'LEVEL ' + level);
 }
 
 function initializeClassicArcadeLevel(level)
@@ -427,29 +474,10 @@ function update()
     }
 
     if (!splashStarted && !cursorMoving && remainingWalls === 0)
-    {
-        splashStarted = currentTime;
-        resultBox.html('YOU LOSE');
-    }
+        startSplashScreen(SplashScreenType.LevelFailed, 'YOU LOSE');
 
-    if (splashStarted && currentTime - splashStarted > splashDuration * 1000)
-    {
-        splashStarted = null;
-        resultBox.html('');
-        destroyLevel();
-        if (levelCompleted)
-        {
-            ++currentLevel;
-            addWalls(currentLevel + 1);
-            levelCompleted = false;
-        }
-        else
-        {
-            currentLevel = 1;
-            setRemainingWalls(initialWalls);
-        }
-        initializeLevel(gameMode, currentLevel);
-    }
+    if (splashStarted && currentTime - splashStarted > splashDuration[splashType] * 1000)
+        endSplashScreen();
 }
 
 function drawScreen()
@@ -806,7 +834,9 @@ function handleMouseMove(event) {
 }
 
 function handleMouseDown(event) {
-    if (cursorMoving || splashStarted)
+    if (cursorMoving ||
+        splashType === SplashScreenType.LevelCompleted ||
+        splashType === SplashScreenType.LevelFailed)
         return;
 
     var rect = canvas.getBoundingClientRect();
@@ -832,7 +862,10 @@ function handleMouseDown(event) {
 }
 
 function handleMouseUp(event) {
-    if (cursorMoving || splashStarted || (!activeCircle && !activeLine))
+    if (cursorMoving ||
+        splashType === SplashScreenType.LevelCompleted ||
+        splashType === SplashScreenType.LevelFailed ||
+        (!activeCircle && !activeLine))
         return;
 
     var rect = canvas.getBoundingClientRect();
@@ -979,11 +1012,7 @@ function recalculateArea()
     if (debug) displayTree();
 
     if ((totalArea*100).toFixed() >= 75)
-    {
-        splashStarted = Date.now();
-        levelCompleted = true;
-        resultBox.html('YOU WIN');
-    }
+        startSplashScreen(SplashScreenType.LevelCompleted, 'YOU WIN');
 }
 
 function displayTree()
