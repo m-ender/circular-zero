@@ -67,6 +67,9 @@ var totalArea;
 
 var enemies;
 
+// Only used for debugging purposes
+var markers = [];
+
 var currentLevel;
 var remainingWalls;
 
@@ -74,6 +77,8 @@ var mouseDown = false;
 var cursorMoving = false;
 var target = null; // Could be either a .toDistance for activeLine or a .toAngle for activeCircle
 var direction = null; // Only necessary for motion around activeCircle
+var checkpoints = null;
+var nextCheckpoint = null;
 
 // Gameplay configuration
 var GameMode = {
@@ -504,6 +509,10 @@ function drawScreen()
     for (var i = 0; i < enemies.length; ++i)
         enemies[i].render();
 
+    if (debug)
+        for (i = 0; i < markers.length; ++i)
+            markers[i].render(CircleType.Inside);
+
     gl.disable(gl.BLEND);
 }
 
@@ -513,7 +522,18 @@ function moveCursor(dTime)
 
     if (activeLine)
     {
-        activeLine.toDistance += cursorSpeed * dTime / 1000;
+        if (nextCheckpoint == checkpoints.length)
+            activeLine.toDistance = target;
+        else
+        {
+            activeLine.toDistance += cursorSpeed * dTime / 1000;
+
+            if (activeLine.toDistance >= checkpoints[nextCheckpoint].t)
+            {
+                ++nextCheckpoint;
+                console.log("check");
+            }
+        }
 
         if (activeLine.toDistance >= target)
         {
@@ -527,8 +547,19 @@ function moveCursor(dTime)
     }
     else if (activeCircle)
     {
-        // ds = r*dtheta --> dtheta = ds / r
-        activeCircle.toAngle += direction * cursorSpeed * dTime / 1000 / activeCircle.r;
+        if (nextCheckpoint == checkpoints.length)
+            activeCircle.toAngle = target;
+        else
+        {
+            // ds = r*dtheta --> dtheta = ds / r
+            activeCircle.toAngle += direction * cursorSpeed * dTime / 1000 / activeCircle.r;
+
+            if (direction*activeCircle.toAngle >= direction*checkpoints[nextCheckpoint].t)
+            {
+                ++nextCheckpoint;
+                console.log("check");
+            }
+        }
 
         if (direction * activeCircle.toAngle >= direction * target)
         {
@@ -883,6 +914,11 @@ function handleMouseUp(event) {
     var newColor = colorGenerator.nextColor(true);
     newColor =  [newColor.red()/255, newColor.green()/255, newColor.blue()/255];
 
+    var newGeometry;
+    var intersections = [];
+
+    // The ordering of intersections will depend on the direction in which
+    // the cursor grows.
     if (!activeCircle.hidden)
     {
         activeLine.destroy();
@@ -916,9 +952,7 @@ function handleMouseUp(event) {
         // Determine sense of movement
         direction = sign(target - activeCircle.fromAngle);
 
-        activeCircle.toAngle = activeCircle.fromAngle;
-
-        var newCircle = new Circle(
+        newGeometry = new Circle(
             activeCircle.x,
             activeCircle.y,
             activeCircle.r,
@@ -928,28 +962,85 @@ function handleMouseUp(event) {
             newColor
         );
 
-        affectedLeaves = rootCircle.insert(newCircle);
+        intersections.push(activeCircle.fromAngle);
+        intersections.push(target);
     }
     else
     {
         activeCircle.destroy();
         activeCircle = null;
-        activeLine.toDistance = -1;
         target = 1;
 
-        var newLine = new Line(
+        // Not necessary for movement, but for ordering of intersections
+        direction = +1;
+
+        newGeometry = new Line(
             activeLine.angle,
             activeLine.type,
             target,
             newColor
         );
 
-        affectedLeaves = rootCircle.insert(newLine);
+        intersections.push(-1);
+        intersections.push(1);
     }
 
-    useWall();
+    affectedLeaves = [];
+    rootCircle.insert(newGeometry, affectedLeaves, intersections);
+    intersections.sort(function(a,b) {
+        return direction * (a-b);
+    });
+
+    checkpoints = [];
+
+    // We are now processing each adjacent pair of intersections. The
+    // latter point in a pair is the more interesting one, so i will
+    // refer to that one.
+    for (var i = 1; i < intersections.length; ++i)
+    {
+        // Get a point halfway between the two intersections.
+        var t = (intersections[i-1] + intersections[i]) / 2;
+
+        // Now we (ab)use getEndPoint() of the active geometry to
+        // turn this number into a 2D point.
+        var probe;
+        if (activeCircle)
+        {
+            activeCircle.toAngle = t;
+            probe = activeCircle.getEndPoint();
+        }
+        else
+        {
+            activeLine.toDistance = t;
+            probe = activeLine.getEndPoint();
+        }
+
+        // Now we use that point to probe the tree and see which leaf
+        // it lies in.
+        var leaf = rootCircle.probeTree(probe.x, probe.y);
+
+        // Is this lands in an open leaf than the latter intersection of
+        // the current pair acts as a checkpoint for that leaf.
+        if (leaf instanceof OpenLeaf)
+            checkpoints.push({
+                t:    intersections[i],
+                leaf: leaf,
+            });
+    }
+
+    // Fix the end point of the active geometry.
+    if (activeCircle)
+        activeCircle.toAngle = activeCircle.fromAngle;
+    else
+        activeLine.toDistance = -1;
+
+    // TODO: We should really avoid ever starting in this case
+    if (checkpoints.length)
+        useWall();
 
     cursorMoving = true;
+
+    nextCheckpoint = 0;
 }
 
 // Takes the mouse event and the rectangle to normalise for

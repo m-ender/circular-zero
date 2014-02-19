@@ -70,8 +70,9 @@ CollisionDetector.prototype.intersectionsLineCircle = function(line, circle) {
 // or true if the lines are the same.
 CollisionDetector.prototype.intersectionsLines = function(line1, line2) {
     // If the lines seem parallel in screen space, we take them to
-    // be the same.
-    if (abs(line1.angle % pi - line2.angle % pi) < 1e-5)
+    // be the same. We add 2pi, because one might be negative. Adding
+    // pi would probably suffice.
+    if (abs((line1.angle + 2*pi) % pi - (line2.angle + 2*pi) % pi) < 1e-5)
         return true;
     else
         // By construction all lines go through the origin

@@ -170,8 +170,7 @@ InnerNode.prototype.toString = function(depth) {
     return indent + type + '; A: ' + this.area.toFixed(2) + '\n' + this.lChild.toString(depth+1) + this.rChild.toString(depth+1);
 };
 
-// Returns a list of OpenLeaves that geometry has been inserted into.
-InnerNode.prototype.insert = function(geometry) {
+InnerNode.prototype.insert = function(geometry, affectedLeaves, intersections) {
     var points = geometry.intersectionsWith(this.geometry);
 
     // The new geometry is identical to the existing one... ignore it
@@ -182,8 +181,46 @@ InnerNode.prototype.insert = function(geometry) {
     // leaves.
     if (points.length)
     {
-        var affectedLeaves = this.insertLChild(geometry);
-        return affectedLeaves.concat(this.insertRChild(geometry));
+        // By construction only one intersection lies inside the unit
+        // circle. Except with the root circle, so we somehow need to
+        // take care of that case. I admit the current solution is
+        // more hack than anything else.
+        if (this.parent !== null)
+        {
+            var p;
+            if (points[0].x*points[0].x + points[0].y*points[0].y < 1)
+                p = points[0];
+            else
+                p = points[1];
+
+            if (geometry instanceof Circle)
+            {
+                // Get vector from center of circle to intersection
+                var dx = p.x - geometry.x;
+                var dy = p.y - geometry.y;
+
+                var angle = atan2(dy,dx);
+
+                // Correct angle to lie within pi of the circle's starting angle
+                if (angle - geometry.fromAngle > pi)
+                    angle -= 2*pi;
+                else if (angle - geometry.fromAngle < -pi)
+                    angle += 2*pi;
+
+                intersections.push(angle);
+            }
+            else if (geometry instanceof Line)
+            {
+                var lx = cos(geometry.angle);
+                var ly = sin(geometry.angle);
+
+                // Project intersection onto line
+                intersections.push(lx*p.x + ly*p.y);
+            }
+        }
+
+        this.insertLChild(geometry, affectedLeaves, intersections);
+        this.insertRChild(geometry, affectedLeaves, intersections);
     }
     // The new geometry does not intersect the existing one, so we need
     // to figure out on which side it is.
@@ -195,16 +232,16 @@ InnerNode.prototype.insert = function(geometry) {
             if (this.geometry instanceof Circle)
             {
                 if (geometry.r < this.geometry.r && this.geometry.liesLeftOf(geometry.x, geometry.y))
-                    return this.insertLChild(geometry);
+                    this.insertLChild(geometry, affectedLeaves, intersections);
                 else
-                    return this.insertRChild(geometry);
+                    this.insertRChild(geometry, affectedLeaves, intersections);
             }
             else if (this.geometry instanceof Line)
             {
                 if (this.geometry.liesLeftOf(geometry.x, geometry.y))
-                    return this.insertLChild(geometry);
+                    this.insertLChild(geometry, affectedLeaves, intersections);
                 else
-                    return this.insertRChild(geometry);
+                    this.insertRChild(geometry, affectedLeaves, intersections);
             }
         }
         else if (geometry instanceof Line)
@@ -214,29 +251,29 @@ InnerNode.prototype.insert = function(geometry) {
             // If this.geometry is a circle, and there has been
             // no intersection, the line has to lie outside the
             // circle.
-            return this.insertRChild(geometry);
+            this.insertRChild(geometry, affectedLeaves, intersections);
     }
 };
 
-InnerNode.prototype.insertLChild = function(geometry) {
-    return this.insertChild(geometry, 'lChild');
+InnerNode.prototype.insertLChild = function(geometry, affectedLeaves, intersections) {
+    return this.insertChild(geometry, affectedLeaves, intersections, 'lChild');
 };
 
-InnerNode.prototype.insertRChild = function(geometry) {
-    return this.insertChild(geometry, 'rChild');
+InnerNode.prototype.insertRChild = function(geometry, affectedLeaves, intersections) {
+    return this.insertChild(geometry, affectedLeaves, intersections, 'rChild');
 };
 
-InnerNode.prototype.insertChild = function(geometry, propertyName) {
+InnerNode.prototype.insertChild = function(geometry, affectedLeaves, intersections, propertyName) {
     var child = this[propertyName];
     if (child instanceof ClosedLeaf)
-        return [];
+        return;
     else if (child instanceof OpenLeaf)
     {
         child.geometry = geometry;
-        return [child];
+        affectedLeaves.push(child);
     }
     else if (child instanceof InnerNode)
-        return child.insert(geometry);
+        child.insert(geometry, affectedLeaves, intersections);
 };
 
 InnerNode.prototype.registerSample = function(x, y) {
@@ -250,6 +287,13 @@ InnerNode.prototype.registerSample = function(x, y) {
         ++this.rChildSamples;
         this.rChild.registerSample(x,y);
     }
+};
+
+InnerNode.prototype.probeTree = function(x,y) {
+    if (this.geometry.liesLeftOf(x,y))
+        return this.lChild.probeTree(x,y);
+    else
+        return this.rChild.probeTree(x,y);
 };
 
 InnerNode.prototype.recalculateAreas = function() {
@@ -289,6 +333,10 @@ ClosedLeaf.prototype.render = function() {
 
 ClosedLeaf.prototype.registerSample = function(x, y) {
     return; // Nothing to do here...
+};
+
+ClosedLeaf.prototype.probeTree = function(x,y) {
+    return this;
 };
 
 ClosedLeaf.prototype.recalculateAreas = function(x, y) {
@@ -348,6 +396,10 @@ OpenLeaf.prototype.registerSample = function(x, y) {
         ++this.lChildSamples;
     else
         ++this.rChildSamples;
+};
+
+OpenLeaf.prototype.probeTree = function(x,y) {
+    return this;
 };
 
 OpenLeaf.prototype.recalculateAreas = function(x, y) {
