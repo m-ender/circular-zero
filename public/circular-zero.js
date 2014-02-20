@@ -319,10 +319,16 @@ function initializeCampaignLevel(level)
 
     var levelData = CampaignLevels[level-1];
 
+    var enemyData;
+    if (typeof levelData.enemies === 'function')
+        enemyData = levelData.enemies();
+    else
+        enemyData = levelData.enemies;
+
     enemies = [];
-    for (var i = 0; i < levelData.enemies.length; ++i)
+    for (var i = 0; i < enemyData.length; ++i)
     {
-        var enemy = levelData.enemies[i];
+        var enemy = enemyData[i];
         var type = EnemyTypes[enemy.type];
 
         enemies.push(new Enemy(enemy.x, enemy.y, type.speed, enemy.angle, type.radius));

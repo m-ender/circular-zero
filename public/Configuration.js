@@ -82,4 +82,36 @@ var CampaignLevels = [
         initialWalls: [],
         availableWalls: 2,
     },
+    { // The Egg!
+        enemies: function() {
+            var result = [];
+            for (var i = 0; i < 6; ++i)
+            {
+                var r = (1 - EnemyTypes[0].radius) * 1/6 * i;
+                var phi = i * pi/12;
+                result.push({
+                    type: 0,
+                    x: r*cos(phi),
+                    y: r*sin(phi),
+                    angle: phi,
+                });
+            }
+
+            for (var i = 0; i < 6; ++i)
+            {
+                var r = (1 - EnemyTypes[0].radius) * 1/6 * (6 - i);
+                var phi = pi/2 + i * pi/12;
+                result.push({
+                    type: 0,
+                    x: r*cos(phi),
+                    y: r*sin(phi),
+                    angle: phi + pi,
+                });
+            }
+
+            return result;
+        },
+        initialWalls: [],
+        availableWalls: 20,
+    },
 ];
