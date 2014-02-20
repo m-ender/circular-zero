@@ -204,9 +204,9 @@ InnerNode.prototype.insert = function(geometry, affectedLeaves, intersections) {
                 var angle = atan2(dy,dx);
 
                 // Correct angle to lie within pi of the circle's starting angle
-                if (angle - geometry.fromAngle > pi)
+                if (angle - geometry.fromT > pi)
                     angle -= 2*pi;
-                else if (angle - geometry.fromAngle < -pi)
+                else if (angle - geometry.fromT < -pi)
                     angle += 2*pi;
 
                 t = angle;

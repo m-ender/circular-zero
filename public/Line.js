@@ -22,18 +22,18 @@ var LineType = {
 // Adding pi to the angle will switch the roles of left and right!
 // The third parameter should be a member of LineType (see above).
 // The default type is LineType.Line.
-// fromDistance and toDistance are optional parameters to draw only part of a
+// fromT and toT are optional parameters to draw only part of a
 // LineType.Line. They need to be in range [-1, 1], with -1 corresponding to
 // the start of the full line and 1 corresponding to the end of a full line.
 // The color is optional and can be used to overwrite the global colorFunction.
-function Line(angle, type, fromDistance, toDistance, color)
+function Line(angle, type, fromT, toT, color)
 {
     this.hidden = false;
 
     this.angle = angle;
 
-    this.fromDistance = (fromDistance === undefined) ? 1 : fromDistance;
-    this.toDistance = (toDistance === undefined) ? 1 : toDistance;
+    this.fromT = (fromT === undefined) ? 1 : fromT;
+    this.toT = (toT === undefined) ? 1 : toT;
 
     this.color = color || [colorFunction(), colorFunction(), colorFunction()];
 
@@ -133,8 +133,8 @@ Line.prototype.render = function(type) {
 
     if (type === LineType.Line)
     {
-        gl.uniform1f(lineProgram.uFromDistance, this.fromDistance);
-        gl.uniform1f(lineProgram.uToDistance, this.toDistance);
+        gl.uniform1f(lineProgram.uFromDistance, this.fromT);
+        gl.uniform1f(lineProgram.uToDistance, this.toT);
     }
     else
     {
@@ -167,15 +167,15 @@ Line.prototype.render = function(type) {
     gl.disableVertexAttribArray(lineProgram.aColor);
 };
 
-// Returns the point corresponding to toDistance
+// Returns the point corresponding to toT
 Line.prototype.getEndPoint = function(other) {
     // Get normal vector along this.angle
     var x = cos(this.angle);
     var y = sin(this.angle);
 
     return {
-        x: x * this.toDistance,
-        y: y * this.toDistance
+        x: x * this.toT,
+        y: y * this.toT
     };
 };
 

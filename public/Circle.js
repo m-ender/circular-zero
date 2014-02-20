@@ -59,10 +59,10 @@ var CircleType = {
 // x and y are the coordinates of the circle's center, r is the radius.
 // The fourth parameter should be a member of CircleType (see above).
 // The default type is CircleType.Circumference.
-// fromAngle and toAngle are optional and can be used to draw an arc only. Use
+// fromT and toT are optional and can be used to draw an arc only. Use
 // angles in the range [0, 2pi].
 // The color is optional and can be used to overwrite the global colorFunction.
-function Circle(x, y, r, type, fromAngle, toAngle, color)
+function Circle(x, y, r, type, fromT, toT, color)
 {
     this.hidden = false;
 
@@ -70,8 +70,8 @@ function Circle(x, y, r, type, fromAngle, toAngle, color)
     this.y = y;
     this.r = r;
 
-    this.fromAngle = fromAngle || 0;
-    this.toAngle = (toAngle === undefined) ? 2*pi : toAngle;
+    this.fromT = fromT || 0;
+    this.toT = (toT === undefined) ? 2*pi : toT;
 
     this.color = color || [colorFunction(), colorFunction(), colorFunction()];
 
@@ -173,8 +173,8 @@ Circle.prototype.render = function(type) {
 
     gl.uniform2f(circleProgram.uCenter, this.x, this.y);
     gl.uniform1f(circleProgram.uR, this.r);
-    gl.uniform1f(circleProgram.uFromAngle, this.fromAngle);
-    gl.uniform1f(circleProgram.uToAngle, this.toAngle);
+    gl.uniform1f(circleProgram.uFromAngle, this.fromT);
+    gl.uniform1f(circleProgram.uToAngle, this.toT);
 
     gl.enableVertexAttribArray(circleProgram.aPos);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertices[type].bufferId);
@@ -203,12 +203,12 @@ Circle.prototype.render = function(type) {
     gl.disableVertexAttribArray(circleProgram.aColor);
 };
 
-// Returns the point corresponding to toDistance
+// Returns the point corresponding to toT
 Circle.prototype.getEndPoint = function(other) {
-    // Construct point from radius, centre and this.toAngle
+    // Construct point from radius, centre and this.toT
     return {
-        x: this.x + this.r * cos(this.toAngle),
-        y: this.y + this.r * sin(this.toAngle)
+        x: this.x + this.r * cos(this.toT),
+        y: this.y + this.r * sin(this.toT)
     };
 };
 

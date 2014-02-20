@@ -60,6 +60,7 @@ var cursor = null;
 
 var activeLine = null;
 var activeCircle = null;
+var activeGeometry = null;
 
 var affectedLeaves = null;
 
@@ -75,7 +76,7 @@ var remainingWalls;
 
 var mouseDown = false;
 var cursorMoving = false;
-var target = null; // Could be either a .toDistance for activeLine or a .toAngle for activeCircle
+var target = null; // The target .toT of the active geometry
 var direction = null; // Only necessary for motion around activeCircle
 var checkpoints = null;
 var nextCheckpoint = null;
@@ -483,7 +484,7 @@ function update()
     }
 
     if (!splashStarted && !cursorMoving && remainingWalls === 0)
-        startSplashScreen(SplashScreenType.LevelFailed, 'YOU LOSE');
+        startSplashScreen(SplashScreenType.LevelFailed, 'GAME OVER');
 
     if (splashStarted && currentTime - splashStarted > splashType.duration * 1000)
         endSplashScreen();
@@ -519,66 +520,48 @@ function drawScreen()
 
 function moveCursor(dTime)
 {
-    var endPoint;
+    var dT;
 
-    if (activeLine)
-    {
-        activeLine.toDistance += cursorSpeed * dTime / 1000;
-
-        if (nextCheckpoint < checkpoints.length &&
-            activeLine.toDistance >= checkpoints[nextCheckpoint].t)
-        {
-            checkpoints[nextCheckpoint].leaf.subdivide();
-            // TODO: We actually only need to look at the subdivided leaf
-            // to figure out how the area changed. However, if we do that
-            // we lose the gradual refinement of other parts of the tree
-            // due to more samples being registered.
-            recalculateArea();
-            // TODO: Unify parameter names (from|to)(Distance|Angle) and
-            // add activeGeometry global to avoid a lot of code duplication.
-            activeLine.fromDistance = checkpoints[nextCheckpoint].t;
-            ++nextCheckpoint;
-        }
-
-        if (activeLine.toDistance >= target)
-        {
-            activeLine.destroy();
-            cursorMoving = false;
-        }
-
-        endPoint = activeLine.getEndPoint();
-        cursor.x = endPoint.x;
-        cursor.y = endPoint.y;
-    }
-    else if (activeCircle)
+    if (activeGeometry instanceof Circle)
     {
         // ds = r*dtheta --> dtheta = ds / r
-        activeCircle.toAngle += direction * cursorSpeed * dTime / 1000 / activeCircle.r;
-
-        if (nextCheckpoint < checkpoints.length &&
-            direction*activeCircle.toAngle >= direction*checkpoints[nextCheckpoint].t)
-        {
-            checkpoints[nextCheckpoint].leaf.subdivide();
-            recalculateArea();
-            activeCircle.fromAngle = checkpoints[nextCheckpoint].t;
-            ++nextCheckpoint;
-        }
-
-        if (direction * activeCircle.toAngle >= direction * target)
-        {
-            activeCircle.destroy();
-            cursorMoving = false;
-        }
-
-        endPoint = activeCircle.getEndPoint();
-        cursor.x = endPoint.x;
-        cursor.y = endPoint.y;
+        dT = direction * cursorSpeed * dTime / 1000 / activeCircle.r;
     }
+    else if (activeGeometry instanceof Line)
+    {
+        dT = cursorSpeed * dTime / 1000;
+    }
+
+    activeGeometry.toT += dT;
+
+    if (nextCheckpoint < checkpoints.length &&
+        direction * activeGeometry.toT >= direction * checkpoints[nextCheckpoint].t)
+    {
+        checkpoints[nextCheckpoint].leaf.subdivide();
+        // TODO: We actually only need to look at the subdivided leaf
+        // to figure out how the area changed. However, if we do that
+        // we lose the gradual refinement of other parts of the tree
+        // due to more samples being registered.
+        recalculateArea();
+        activeGeometry.fromT = checkpoints[nextCheckpoint].t;
+        ++nextCheckpoint;
+    }
+
+    if (direction * activeGeometry.toT >= direction * target)
+    {
+        activeGeometry.destroy();
+        cursorMoving = false;
+    }
+
+    var endPoint = activeGeometry.getEndPoint();
+    cursor.x = endPoint.x;
+    cursor.y = endPoint.y;
 
     if (!cursorMoving)
     {
         activeLine = null;
         activeCircle = null;
+        activeGeometry = null;
 
         affectedLeaves = null;
     }
@@ -752,16 +735,16 @@ function moveEnemies(dTime) {
 
                         var iAngle = atan2(yp, xp);
 
-                        // Make sure the distance between fromAngle and iAngle is less than pi
-                        if (iAngle - activeCircle.fromAngle > pi)
+                        // Make sure the distance between fromT and iAngle is less than pi
+                        if (iAngle - activeCircle.fromT > pi)
                             iAngle -= 2*pi;
-                        else if (iAngle - activeCircle.fromAngle < -pi)
+                        else if (iAngle - activeCircle.fromT < -pi)
                             iAngle += 2*pi;
 
-                        // Take care of the fact that toAngle can be growing in the positive
+                        // Take care of the fact that toT can be growing in the positive
                         // or the negative direction.
-                        if (iAngle > activeCircle.fromAngle && iAngle < activeCircle.toAngle ||
-                            iAngle < activeCircle.fromAngle && iAngle > activeCircle.toAngle
+                        if (iAngle > activeCircle.fromT && iAngle < activeCircle.toT ||
+                            iAngle < activeCircle.fromT && iAngle > activeCircle.toT
                         ) {
                             abortNewGeometry();
                         }
@@ -774,7 +757,7 @@ function moveEnemies(dTime) {
 
                         var emu = lx*e.x + ly*e.y;
 
-                        if (emu < activeLine.toDistance)
+                        if (emu < activeLine.toT)
                             abortNewGeometry();
                     }
                 }
@@ -789,14 +772,14 @@ function abortNewGeometry() {
     var endPoint;
     if (activeCircle)
     {
-        activeCircle.toAngle = target;
+        activeCircle.toT = target;
         endPoint = activeCircle.getEndPoint();
         activeCircle.destroy();
         activeCircle = null;
     }
     else
     {
-        activeLine.toDistance = target;
+        activeLine.toT = target;
         endPoint = activeLine.getEndPoint();
         activeLine.destroy();
         activeLine = null;
@@ -928,40 +911,39 @@ function handleMouseUp(event) {
         var dy = points[0].y - cursor.y;
         var d2 = dx*dx + dy*dy;
 
-        // Check which point corresponds to the cursor and set fromAngle and toAngle accordingly
+        // Check which point corresponds to the cursor and set fromT and toT accordingly
         if (d2 < 1e-10)
         {
-            activeCircle.fromAngle = atan2(points[0].y - activeCircle.y, points[0].x - activeCircle.x);
+            activeCircle.fromT = atan2(points[0].y - activeCircle.y, points[0].x - activeCircle.x);
             target = atan2(points[1].y - activeCircle.y, points[1].x - activeCircle.x);
         }
         else
         {
-            activeCircle.fromAngle = atan2(points[1].y - activeCircle.y, points[1].x - activeCircle.x);
+            activeCircle.fromT = atan2(points[1].y - activeCircle.y, points[1].x - activeCircle.x);
             target = atan2(points[0].y - activeCircle.y, points[0].x - activeCircle.x);
         }
 
-        // Make sure the distance between fromAngle and toAngle is less than pi (otherwise we
+        // Make sure the distance between fromT and toT is less than pi (otherwise we
         // might go around the circle in the wrong direction)
-        if (target - activeCircle.fromAngle > pi)
+        if (target - activeCircle.fromT > pi)
             target -= 2*pi;
-        else if (target - activeCircle.fromAngle < -pi)
+        else if (target - activeCircle.fromT < -pi)
             target += 2*pi;
 
         // Determine sense of movement
-        direction = sign(target - activeCircle.fromAngle);
+        direction = sign(target - activeCircle.fromT);
 
         newGeometry = new Circle(
             activeCircle.x,
             activeCircle.y,
             activeCircle.r,
             activeCircle.type,
-            activeCircle.fromAngle,
+            activeCircle.fromT,
             target,
             newColor
         );
 
-        intersections.push(activeCircle.fromAngle);
-        intersections.push(target);
+        activeGeometry = activeCircle;
     }
     else
     {
@@ -975,14 +957,16 @@ function handleMouseUp(event) {
         newGeometry = new Line(
             activeLine.angle,
             activeLine.type,
-            activeLine.fromDistance,
+            activeLine.fromT,
             target,
             newColor
         );
 
-        intersections.push(-1);
-        intersections.push(1);
+        activeGeometry = activeLine;
     }
+
+    intersections.push(activeGeometry.fromT);
+    intersections.push(target);
 
     affectedLeaves = [];
     rootCircle.insert(newGeometry, affectedLeaves, intersections);
@@ -1003,16 +987,8 @@ function handleMouseUp(event) {
         // Now we (ab)use getEndPoint() of the active geometry to
         // turn this number into a 2D point.
         var probe;
-        if (activeCircle)
-        {
-            activeCircle.toAngle = t;
-            probe = activeCircle.getEndPoint();
-        }
-        else
-        {
-            activeLine.toDistance = t;
-            probe = activeLine.getEndPoint();
-        }
+        activeGeometry.toT = t;
+        probe = activeGeometry.getEndPoint();
 
         // Now we use that point to probe the tree and see which leaf
         // it lies in.
@@ -1028,10 +1004,7 @@ function handleMouseUp(event) {
     }
 
     // Fix the end point of the active geometry.
-    if (activeCircle)
-        activeCircle.toAngle = activeCircle.fromAngle;
-    else
-        activeLine.toDistance = -1;
+    activeGeometry.toT = activeGeometry.fromT;
 
     // TODO: We should really avoid ever starting in this case
     if (checkpoints.length)
