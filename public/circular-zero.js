@@ -529,6 +529,13 @@ function moveCursor(dTime)
             activeLine.toDistance >= checkpoints[nextCheckpoint].t)
         {
             checkpoints[nextCheckpoint].leaf.subdivide();
+            // TODO: We actually only need to look at the subdivided leaf
+            // to figure out how the area changed. However, if we do that
+            // we lose the gradual refinement of other parts of the tree
+            // due to more samples being registered.
+            recalculateArea();
+            // TODO: Unify parameter names (from|to)(Distance|Angle) and
+            // add activeGeometry global to avoid a lot of code duplication.
             activeLine.fromDistance = checkpoints[nextCheckpoint].t;
             ++nextCheckpoint;
         }
@@ -552,6 +559,7 @@ function moveCursor(dTime)
             direction*activeCircle.toAngle >= direction*checkpoints[nextCheckpoint].t)
         {
             checkpoints[nextCheckpoint].leaf.subdivide();
+            recalculateArea();
             activeCircle.fromAngle = checkpoints[nextCheckpoint].t;
             ++nextCheckpoint;
         }
@@ -573,8 +581,6 @@ function moveCursor(dTime)
         activeCircle = null;
 
         affectedLeaves = null;
-
-        recalculateArea();
     }
 }
 
