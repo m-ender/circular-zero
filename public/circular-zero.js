@@ -178,6 +178,7 @@ function init()
     // add uniform locations
     lineProgram.uRenderScale = gl.getUniformLocation(lineProgram.program, "uRenderScale");
     lineProgram.uAngle = gl.getUniformLocation(lineProgram.program, "uAngle");
+    lineProgram.uFromDistance = gl.getUniformLocation(lineProgram.program, "uFromDistance");
     lineProgram.uToDistance = gl.getUniformLocation(lineProgram.program, "uToDistance");
     // add attribute locations
     lineProgram.aPos = gl.getAttribLocation(lineProgram.program, "aPos");
@@ -522,18 +523,14 @@ function moveCursor(dTime)
 
     if (activeLine)
     {
-        if (nextCheckpoint == checkpoints.length)
-            activeLine.toDistance = target;
-        else
-        {
-            activeLine.toDistance += cursorSpeed * dTime / 1000;
+        activeLine.toDistance += cursorSpeed * dTime / 1000;
 
-            if (activeLine.toDistance >= checkpoints[nextCheckpoint].t)
-            {
-                checkpoints[nextCheckpoint].leaf.subdivide();
-                // TODO: Lines need a fromDistance
-                ++nextCheckpoint;
-            }
+        if (nextCheckpoint < checkpoints.length &&
+            activeLine.toDistance >= checkpoints[nextCheckpoint].t)
+        {
+            checkpoints[nextCheckpoint].leaf.subdivide();
+            activeLine.fromDistance = checkpoints[nextCheckpoint].t;
+            ++nextCheckpoint;
         }
 
         if (activeLine.toDistance >= target)
@@ -548,19 +545,15 @@ function moveCursor(dTime)
     }
     else if (activeCircle)
     {
-        if (nextCheckpoint == checkpoints.length)
-            activeCircle.toAngle = target;
-        else
-        {
-            // ds = r*dtheta --> dtheta = ds / r
-            activeCircle.toAngle += direction * cursorSpeed * dTime / 1000 / activeCircle.r;
+        // ds = r*dtheta --> dtheta = ds / r
+        activeCircle.toAngle += direction * cursorSpeed * dTime / 1000 / activeCircle.r;
 
-            if (direction*activeCircle.toAngle >= direction*checkpoints[nextCheckpoint].t)
-            {
-                checkpoints[nextCheckpoint].leaf.subdivide();
-                activeCircle.fromAngle = checkpoints[nextCheckpoint].t;
-                ++nextCheckpoint;
-            }
+        if (nextCheckpoint < checkpoints.length &&
+            direction*activeCircle.toAngle >= direction*checkpoints[nextCheckpoint].t)
+        {
+            checkpoints[nextCheckpoint].leaf.subdivide();
+            activeCircle.fromAngle = checkpoints[nextCheckpoint].t;
+            ++nextCheckpoint;
         }
 
         if (direction * activeCircle.toAngle >= direction * target)
@@ -884,7 +877,7 @@ function handleMouseDown(event) {
     }
 
     mouseDown = true;
-    activeLine = new Line(atan2(-cursor.y, -cursor.x), LineType.Line, 1, [0,0,0]);
+    activeLine = new Line(atan2(-cursor.y, -cursor.x), LineType.Line, -1, 1, [0,0,0]);
 
     // This position is arbitrary. When the user clicks, the
     // line will always be shown and the circles parameters
@@ -976,6 +969,7 @@ function handleMouseUp(event) {
         newGeometry = new Line(
             activeLine.angle,
             activeLine.type,
+            activeLine.fromDistance,
             target,
             newColor
         );

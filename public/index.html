@@ -68,6 +68,7 @@
 
         uniform float uAngle;
         uniform float uToDistance;
+        uniform float uFromDistance;
 
         attribute vec4 aPos;
         attribute vec4 aColor;
@@ -83,7 +84,8 @@
             // the end vertex, but leave the starting vertex as is.
             // For now, here is a hack though:
             float x;
-            if (aPos.x > 0.0) x = uToDistance;
+            if (aPos.x > 0.1) x = uToDistance;
+            else if (aPos.x < 0.1) x = uFromDistance;
             else x = aPos.x;
             // (the other part of the hack is in the rendering code of Line.js)
 
