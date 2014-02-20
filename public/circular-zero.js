@@ -530,8 +530,9 @@ function moveCursor(dTime)
 
             if (activeLine.toDistance >= checkpoints[nextCheckpoint].t)
             {
+                checkpoints[nextCheckpoint].leaf.subdivide();
+                // TODO: Lines need a fromDistance
                 ++nextCheckpoint;
-                console.log("check");
             }
         }
 
@@ -556,8 +557,9 @@ function moveCursor(dTime)
 
             if (direction*activeCircle.toAngle >= direction*checkpoints[nextCheckpoint].t)
             {
+                checkpoints[nextCheckpoint].leaf.subdivide();
+                activeCircle.fromAngle = checkpoints[nextCheckpoint].t;
                 ++nextCheckpoint;
-                console.log("check");
             }
         }
 
@@ -576,9 +578,6 @@ function moveCursor(dTime)
     {
         activeLine = null;
         activeCircle = null;
-
-        for (var i = 0; i < affectedLeaves.length; ++i)
-            affectedLeaves[i].subdivide();
 
         affectedLeaves = null;
 
@@ -791,14 +790,14 @@ function abortNewGeometry() {
     var endPoint;
     if (activeCircle)
     {
-        activeCircle.toAngle = activeCircle.fromAngle;
+        activeCircle.toAngle = target;
         endPoint = activeCircle.getEndPoint();
         activeCircle.destroy();
         activeCircle = null;
     }
     else
     {
-        activeLine.toDistance = -1;
+        activeLine.toDistance = target;
         endPoint = activeLine.getEndPoint();
         activeLine.destroy();
         activeLine = null;
@@ -808,7 +807,7 @@ function abortNewGeometry() {
     cursor.y = endPoint.y;
 
     // All leaves share the same geometry object
-    if (affectedLeaves.length)
+    if (nextCheckpoint === 0 && affectedLeaves.length)
         affectedLeaves[0].geometry.destroy();
 
     for (var i = 0; i < affectedLeaves.length; ++i)

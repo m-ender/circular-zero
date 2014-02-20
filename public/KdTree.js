@@ -193,6 +193,8 @@ InnerNode.prototype.insert = function(geometry, affectedLeaves, intersections) {
             else
                 p = points[1];
 
+            var t;
+
             if (geometry instanceof Circle)
             {
                 // Get vector from center of circle to intersection
@@ -207,7 +209,7 @@ InnerNode.prototype.insert = function(geometry, affectedLeaves, intersections) {
                 else if (angle - geometry.fromAngle < -pi)
                     angle += 2*pi;
 
-                intersections.push(angle);
+                t = angle;
             }
             else if (geometry instanceof Line)
             {
@@ -215,8 +217,12 @@ InnerNode.prototype.insert = function(geometry, affectedLeaves, intersections) {
                 var ly = sin(geometry.angle);
 
                 // Project intersection onto line
-                intersections.push(lx*p.x + ly*p.y);
+                t = lx*p.x + ly*p.y;
             }
+
+            // Add the intersection if it is not present yet
+            if (intersections.indexOf(t) === -1)
+                intersections.push(t);
         }
 
         this.insertLChild(geometry, affectedLeaves, intersections);
