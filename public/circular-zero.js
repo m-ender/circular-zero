@@ -21,6 +21,10 @@ var SplashScreenType = {
         duration: 3,
         locked: true,
     },
+    CampaignCompleted: {
+        duration: Infinity,
+        locked: false,
+    },
 };
 
 var gl;
@@ -71,6 +75,8 @@ var enemies;
 // Only used for debugging purposes
 var markers = [];
 
+var gameMode;
+
 var currentLevel;
 var remainingWalls;
 
@@ -80,41 +86,6 @@ var target = null; // The target .toT of the active geometry
 var direction = null; // Only necessary for motion around activeCircle
 var checkpoints = null;
 var nextCheckpoint = null;
-
-// Gameplay configuration
-var GameMode = {
-    ClassicArcade: "classicArcade", // random levels, one enemy type
-    VarietyArcade: "varietyArcade", // random levels, multiple enemy types
-    Campaign: "campaign", // designed levels
-};
-
-var gameMode;
-
-var cursorRadius = 0.025;
-var cursorSpeed = 1; // given in length units per second
-
-var EnemyTypes = [
-    { // The default enemy is always at index 0
-        radius: 0.025,
-        speed: 0.3, // given in length units per second
-        level: 1 // this is used to count how many default
-                 // enemies the other types are "worth"
-    },
-    { // A big but slow variant
-        radius: 0.075,
-        speed: 0.2,
-        level: 2
-    }, // A fast but small variant
-    {
-        radius: 0.01,
-        speed: 1,
-        level: 3
-    }
-];
-
-var initialWalls = 10;
-var wallsPerLevel = 5;
-
 
 window.onload = init;
 
@@ -224,16 +195,15 @@ function endSplashScreen()
         break;
     case SplashScreenType.LevelCompleted:
         destroyLevel();
-        ++currentLevel;
-        addWalls(currentLevel + 1);
         levelCompleted = false;
-        initializeLevel(gameMode, currentLevel);
+        initializeLevel(gameMode, currentLevel+1);
         break;
     case SplashScreenType.LevelFailed:
         destroyLevel();
-        currentLevel = 1;
-        setRemainingWalls(initialWalls);
-        initializeLevel(gameMode, currentLevel);
+        initializeLevel(gameMode, 1);
+        break;
+    case SplashScreenType.CampaignCompleted:
+        console.log("Something went wrong, this splash screen should never end!");
         break;
     }
 }
@@ -248,14 +218,14 @@ function setGameMode(mode)
 
     destroyLevel();
 
-    currentLevel = 1;
-
     setRemainingWalls(initialWalls);
-    initializeLevel(gameMode, currentLevel);
+    initializeLevel(gameMode, 1);
 }
 
 function initializeLevel(mode, level)
 {
+    currentLevel = level;
+
     switch (mode)
     {
     case GameMode.ClassicArcade:
@@ -265,7 +235,7 @@ function initializeLevel(mode, level)
         initializeVarietyArcadeLevel(level);
         break;
     case GameMode.Campaign:
-        initializeClassicArcadeLevel(level);
+        initializeCampaignLevel(level);
         break;
     }
 
@@ -277,12 +247,12 @@ function initializeLevel(mode, level)
 
     totalArea = 0;
     debugBox.find('#area').html(0);
-    debugBox.find('#level').html(level);
+    debugBox.find('#level').html(currentLevel);
 
     if (debug)
         displayTree();
 
-    startSplashScreen(SplashScreenType.LevelStarted, 'LEVEL ' + level);
+    startSplashScreen(SplashScreenType.LevelStarted, 'LEVEL ' + currentLevel);
 }
 
 function initializeClassicArcadeLevel(level)
@@ -301,6 +271,11 @@ function initializeClassicArcadeLevel(level)
         var angle = Math.random() * 2*pi;
         enemies.push(new Enemy(r*cos(phi), r*sin(phi), type.speed, angle, type.radius));
     }
+
+    if (level === 1)
+        setRemainingWalls(initialWalls);
+    else
+        addWalls(currentLevel + 1);
 }
 
 function initializeVarietyArcadeLevel(level)
@@ -325,6 +300,37 @@ function initializeVarietyArcadeLevel(level)
 
         nEnemies -= type.level;
     }
+
+    if (level === 1)
+        setRemainingWalls(initialWalls);
+    else
+        addWalls(currentLevel + 1);
+}
+
+function initializeCampaignLevel(level)
+{
+    if (level > CampaignLevels.length)
+    {
+        console.log('There is no Level ' + level + '! Cheater! Back to Level 1 with you!');
+        currentLevel = 1;
+        initializeCampaignLevel(currentLevel);
+        return;
+    }
+
+    var levelData = CampaignLevels[level-1];
+
+    enemies = [];
+    for (var i = 0; i < levelData.enemies.length; ++i)
+    {
+        var enemy = levelData.enemies[i];
+        var type = EnemyTypes[enemy.type];
+
+        enemies.push(new Enemy(enemy.x, enemy.y, type.speed, enemy.angle, type.radius));
+    }
+
+    // TODO: Add initial walls
+
+    setRemainingWalls(levelData.availableWalls);
 }
 
 function destroyLevel()
@@ -336,7 +342,6 @@ function destroyLevel()
 function jumpToLevel(n)
 {
     destroyLevel();
-    currentLevel = n;
     initializeLevel(gameMode, n);
 }
 
@@ -1076,7 +1081,14 @@ function recalculateArea()
     if (debug) displayTree();
 
     if ((totalArea*100).toFixed() >= 75)
-        startSplashScreen(SplashScreenType.LevelCompleted, 'YOU WIN');
+    {
+        if (gameMode === GameMode.Campaign &&
+            currentLevel === CampaignLevels.length)
+            startSplashScreen(SplashScreenType.CampaignCompleted, 'CAMPAIGN<br>COMPLETED');
+        else
+            startSplashScreen(SplashScreenType.LevelCompleted, 'YOU WIN');
+    }
+
 }
 
 function displayTree()

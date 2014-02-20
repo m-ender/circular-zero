@@ -85,14 +85,21 @@ body {
   padding-right: 10px;
 }
 
-#result {
+#result-div {
     position: absolute;
     left: 400px;
-    top: 306px;
+    top: 100px;
     width: 512px;
-    height: 100px;
+    height: 512px;
     font-size: 64pt;
     font-weight: bold;
     font-family: Consolas;
     text-align: center;
+    line-height: 512px;
+}
+
+#result {
+    display: inline-block;
+    vertical-align: middle;
+    line-height: normal;
 }
