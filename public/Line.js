@@ -32,7 +32,7 @@ function Line(angle, type, fromT, toT, color)
 
     this.angle = angle;
 
-    this.fromT = (fromT === undefined) ? 1 : fromT;
+    this.fromT = (fromT === undefined) ? -1 : fromT;
     this.toT = (toT === undefined) ? 1 : toT;
 
     this.color = color || [colorFunction(), colorFunction(), colorFunction()];

@@ -239,12 +239,6 @@ function initializeLevel(mode, level)
         break;
     }
 
-    var innerLeafNode = new OpenLeaf(enemies.slice());
-    var outerLeafNode = new ClosedLeaf();
-    innerLeafNode.area = 1; // we are only interested in the relative area
-    outerLeafNode.area = 0; // don't count what's outside the main game arena
-    rootCircle = new InnerNode(null, new Circle(0, 0, 1, CircleType.Circumference), 1, innerLeafNode, outerLeafNode);
-
     totalArea = 0;
     debugBox.find('#area').html(0);
     debugBox.find('#level').html(currentLevel);
@@ -276,6 +270,8 @@ function initializeClassicArcadeLevel(level)
         setRemainingWalls(initialWalls);
     else
         addWalls(currentLevel + 1);
+
+    initializeRootCircle();
 }
 
 function initializeVarietyArcadeLevel(level)
@@ -305,6 +301,8 @@ function initializeVarietyArcadeLevel(level)
         setRemainingWalls(initialWalls);
     else
         addWalls(currentLevel + 1);
+
+    initializeRootCircle();
 }
 
 function initializeCampaignLevel(level)
@@ -334,9 +332,43 @@ function initializeCampaignLevel(level)
         enemies.push(new Enemy(enemy.x, enemy.y, type.speed, enemy.angle, type.radius));
     }
 
-    // TODO: Add initial walls
+    initializeRootCircle();
+
+    var wallData;
+    if (typeof levelData.walls === 'function')
+        wallData = levelData.walls();
+    else
+        wallData = levelData.walls;
+
+    for (i = 0; i < wallData.length; ++i)
+    {
+        var geometry;
+
+        if (wallData[i].type === Circle)
+        {
+            geometry = new Circle(wallData[i].x, wallData[i].y, wallData[i].r);
+        }
+        else if (wallData[i].type === Line)
+        {
+            geometry = new Line(wallData[i].angle);
+        }
+
+        affectedLeaves = [];
+        rootCircle.insert(geometry, affectedLeaves, []);
+        for (var j = 0; j < affectedLeaves.length; ++j)
+            affectedLeaves[j].subdivide();
+    }
 
     setRemainingWalls(levelData.availableWalls);
+}
+
+function initializeRootCircle()
+{
+    var innerLeafNode = new OpenLeaf(enemies.slice());
+    var outerLeafNode = new ClosedLeaf();
+    innerLeafNode.area = 1; // we are only interested in the relative area
+    outerLeafNode.area = 0; // don't count what's outside the main game arena
+    rootCircle = new InnerNode(null, new Circle(0, 0, 1, CircleType.Circumference), 1, innerLeafNode, outerLeafNode);
 }
 
 function destroyLevel()

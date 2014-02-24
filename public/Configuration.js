@@ -43,7 +43,7 @@ var CampaignLevels = [
                 angle: pi/2,
             }
         ],
-        initialWalls: [],
+        walls: [],
         availableWalls: 5,
     },
     { // Two enemies going diagonally
@@ -61,7 +61,7 @@ var CampaignLevels = [
                 angle: 3*pi/4,
             },
         ],
-        initialWalls: [],
+        walls: [],
         availableWalls: 5,
     },
     { // Two enemies going (roughly) around the circumference
@@ -79,16 +79,17 @@ var CampaignLevels = [
                 angle: 0,
             },
         ],
-        initialWalls: [],
+        walls: [],
         availableWalls: 2,
     },
     { // The Egg!
         enemies: function() {
+            var r, phi;
             var result = [];
             for (var i = 0; i < 6; ++i)
             {
-                var r = (1 - EnemyTypes[0].radius) * 1/6 * i;
-                var phi = i * pi/12;
+                r = (1 - EnemyTypes[0].radius) * 1/6 * i;
+                phi = i * pi/12;
                 result.push({
                     type: 0,
                     x: r*cos(phi),
@@ -97,10 +98,10 @@ var CampaignLevels = [
                 });
             }
 
-            for (var i = 0; i < 6; ++i)
+            for (i = 0; i < 6; ++i)
             {
-                var r = (1 - EnemyTypes[0].radius) * 1/6 * (6 - i);
-                var phi = pi/2 + i * pi/12;
+                r = (1 - EnemyTypes[0].radius) * 1/6 * (6 - i);
+                phi = pi/2 + i * pi/12;
                 result.push({
                     type: 0,
                     x: r*cos(phi),
@@ -111,7 +112,126 @@ var CampaignLevels = [
 
             return result;
         },
-        initialWalls: [],
+        walls: [],
         availableWalls: 20,
     },
+    { // The whatever...
+        enemies: function() {
+            var result = [];
+            for (var i = 0; i < 21; ++i)
+            {
+                result.push({
+                    type: 0,
+                    x: 0,
+                    y: (-1 + i / 10) * (1 - 2*EnemyTypes[0].radius),
+                    angle: 0,
+                });
+            }
+            return result;
+        },
+        walls: [],
+        availableWalls: 100,
+    },
+    { // Two worlds
+        enemies: [
+            {
+                type: 1,
+                x: -0.5,
+                y: 0.5,
+                angle: pi/3,
+            },
+            {
+                type: 1,
+                x: -0.5,
+                y: -0.5,
+                angle: -pi/3,
+            },
+            {
+                type: 2,
+                x: 0.5,
+                y: 0.5,
+                angle: 2*pi/3,
+            },
+            {
+                type: 2,
+                x: 0.5,
+                y: -0.5,
+                angle: -2*pi/3,
+            },
+        ],
+        walls: [
+            {
+                type: Line,
+                angle: pi/2,
+            },
+        ],
+        availableWalls: 10,
+    },
+    { // Five worlds!
+        enemies: [
+            {
+                type: 0,
+                x: -1/sqrt(2),
+                y: 0,
+                angle: 0,
+            },
+            {
+                type: 0,
+                x: 1/sqrt(2),
+                y: 0,
+                angle: pi,
+            },
+            {
+                type: 0,
+                x: 0,
+                y: 1/sqrt(2),
+                angle: pi/2,
+            },
+            {
+                type: 0,
+                x: 0,
+                y: -1/sqrt(2),
+                angle: -pi/2,
+            },
+            {
+                type: 0,
+                x: -(sqrt(2) - 1 - EnemyTypes[0].radius) / 2,
+                y: (sqrt(2) - 1 - EnemyTypes[0].radius) / 2,
+                angle: -3*pi/4,
+            },
+            {
+                type: 0,
+                x: (sqrt(2) - 1 - EnemyTypes[0].radius) / 2,
+                y: -(sqrt(2) - 1 - EnemyTypes[0].radius) / 2,
+                angle: pi/4,
+            },
+        ],
+        walls: [
+            {
+                type: Circle,
+                x: -sqrt(2),
+                y: 0,
+                r: 1,
+            },
+            {
+                type: Circle,
+                x: sqrt(2),
+                y: 0,
+                r: 1,
+            },
+            {
+                type: Circle,
+                x: 0,
+                y: -sqrt(2),
+                r: 1,
+            },
+            {
+                type: Circle,
+                x: 0,
+                y: sqrt(2),
+                r: 1,
+            },
+        ],
+        availableWalls: 10,
+    }
 ];
