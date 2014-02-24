@@ -392,13 +392,18 @@ function renderInstructions()
 
 function renderMenu()
 {
+    var levelList = '';
+    for (var i = 1; i <= CampaignLevels.length; ++i)
+        levelList += '+ <a id="level' + i + '">Level ' + i + '</a><br>';
+
     messageBox.html('Switch mode:<br>' +
                     '<br>' +
                     '<a id="classicArcade">Classic Arcade</a><br>' +
                     '<a id="varietyArcade">Variety Arcade</a><br>' +
-                    '<a id="campaign">Campaign</a>');
+                    '<a id="campaign">Campaign</a><br>' +
+                    levelList);
 
-    var createCallback = function(mode) {
+    var createModeSelectCallback = function(mode) {
         return function(e) { setGameMode(mode); };
     };
 
@@ -406,8 +411,18 @@ function renderMenu()
     {
         if (!GameMode.hasOwnProperty(key)) continue;
 
-        messageBox.find('#'+GameMode[key]).bind('click', createCallback(GameMode[key]));
+        messageBox.find('#'+GameMode[key]).bind('click', createModeSelectCallback(GameMode[key]));
     }
+
+    var createLevelSelectCallback = function(level) {
+        return function(e) {
+            setGameMode(GameMode.Campaign);
+            jumpToLevel(level);
+        };
+    };
+
+    for (i = 1; i <= CampaignLevels.length; ++i)
+        messageBox.find('#level' + i).bind('click', createLevelSelectCallback(i));
 }
 
 function InitShaders(gl, vertexShaderId, fragmentShaderId)
