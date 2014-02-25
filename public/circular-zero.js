@@ -36,21 +36,11 @@ var colorGenerator;
 var circleProgram = {};
 var lineProgram = {};
 
-// Textures
-// We will use three textures, whose roles will be shifted circularly every frame
-// One texture is the one we are currently rendering to (and subsequently displaying)
-// One texture is the one that is currently displayed and was rendered last frame
-// One texture is the one that was displayed last frame and rendered two frames ago
-// (We need to remember two previous frames in order to apply our finite difference scheme, as the wave equation is of second order in time)
-var textures = [];
-var rttFramebuffers = []; // Render to texture memory (this will store 3 framebuffers corresponding to the three textures)
 var resolution = 512; // We're assuming a square aspect ratio
 var viewPort = {};
 
 var renderScale = 0.9; // means that the coordinate range [-1, 1] will fill 90% of the viewport
-                       // the scaling is done in the shaders, but is has to be respected in obtaining coordinates from the mouse position
-
-var previousTexture; // Points to the texture from two frames ago, so that we only ever need to add to this value (makes module maths simpler)
+                       // the scaling is done in the shaders, but it has to be respected in obtaining coordinates from the mouse position
 
 // Timing
 // We need these to fix the framerate
