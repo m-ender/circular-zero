@@ -3,7 +3,7 @@ Circular[0]
 
 A prototype for a Qix/Jezzball clone using a circular geometry (i.e. a "fencing off" type game). The prototype is mostly feature complete. I'll see if I make it into an actual game.
 
-[Wanna try?](http://mbuettner.github.io/circular-zero/public/)
+[Wanna try?](http://m-ender.github.io/circular-zero/public/)
 
 Installation
 ===========
